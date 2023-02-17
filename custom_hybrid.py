@@ -45,6 +45,7 @@ class Hybrid_sim():
         self.pysph_sim.setup()
         self.pysph_sim.particles[0].add_property(name='particle_type_id',type='double',default=2.0)
         self.pysph_sim.particles[0].add_property(name='id',type='int',default=-1)
+        self.pysph_sim.particles[0].add_property(name='dt_cfl',type='double',default=0.0)
         self.pysph_sim.particles[0].add_property(name='e1',type='double',default=0.0)
         self.pysph_sim.particles[0].add_property(name='h1',type='double',default=0.0)
         self.pysph_sim.particles[0].add_property(name='m1',type='double',default=0.0)
