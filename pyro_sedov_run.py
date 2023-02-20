@@ -13,13 +13,12 @@ pyro_sedov = Hybrid_sim()
 pyro_sedov.initialize_pyro(solver,problem_name,param_file,other_commands)
 
 # Make Values Uniform
-pyro_sedov.pyro_sim.sim.cc_data.data[:,:,1] = 2.5e-5
-pyro_sedov.pyro_sim.sim.cc_data.prim_array[:,:,3] = 1e-5
+pyro_sedov.pyro_sim.sim.cc_data.data[:,:,1] = 1e-9 # 2.5e-5
+pyro_sedov.pyro_sim.sim.cc_data.prim_array[:,:,3] = 0 # 1e-5
 
 # Calculate Cell Volume
 unit_volume = pyro_sedov.pyro_sim.sim.cc_data.grid.dx * pyro_sedov.pyro_sim.sim.cc_data.grid.dy
 
-"""
 # Inject energy (either odd or even number of cells)
 if (len(pyro_sedov.pyro_sim.sim.cc_data.data[:,:,1])%2==0):
     lower_index = len(pyro_sedov.pyro_sim.sim.cc_data.data)//2 - 1
@@ -31,7 +30,6 @@ else:
     pyro_sedov.pyro_sim.sim.cc_data.data[index,index,1] = 1.0/unit_volume
     pyro_sedov.pyro_sim.sim.cc_data.prim_array[:,:,3] = 0.4 * pyro_sedov.pyro_sim.sim.cc_data.data[:,:,1]
 """
-
 def gaussian_2d(x,y,mu_x,mu_y,sigma):
     xy = (x-mu_x)**2 + (y-mu_y)**2
     return (np.exp(-0.5*(xy)/(sigma**2)))
@@ -43,6 +41,7 @@ y = pyro_sedov.pyro_sim.sim.cc_data.grid.y2d
 
 pyro_sedov.pyro_sim.sim.cc_data.data[:,:,1] = 736.565 * gaussian_2d(x=x,y=y,mu_x=xcntr,mu_y=ycntr,sigma=0.0147) + 1e-9 # 789.459
 pyro_sedov.pyro_sim.sim.cc_data.prim_array[:,:,3] = 526.178 * gaussian_2d(x=x,y=y,mu_x=xcntr,mu_y=ycntr,sigma=0.0147) # 526.178 lower 490.924
+"""
 
 start = time.time()
 count = 0

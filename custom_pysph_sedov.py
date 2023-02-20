@@ -37,9 +37,9 @@ class SedovPointExplosion(CustomApplication):
     def __init__(self,gamma,DoDomain,mirror_x,mirror_y,adaptive,cfl,pfreq,tf,dt,scheme,scheme_params) -> None:
         #self.adaptive = adaptive
         #self.cfl = cfl
-        #self.pfreq = pfreq
-        #self.tf = tf
-        #self.dt = dt
+        self.pfreq = pfreq
+        self.tf = tf
+        self.dt = dt
         super().__init__(gamma,DoDomain,mirror_x,mirror_y,adaptive,cfl,pfreq,tf,dt,scheme,scheme_params)
 
     def create_particles(self):
@@ -64,7 +64,19 @@ class SedovPointExplosion(CustomApplication):
               % (fluid.get_number_of_particles()))
 
         return [fluid,]
-
+"""
+    def create_scheme(self):
+        s = GasDScheme(
+            fluids=['fluid'], solids=[], dim=dim, gamma=gamma,
+            kernel_factor=kernel_factor, alpha1=alpha1, alpha2=alpha2,
+            beta=beta, adaptive_h_scheme="gsph",
+            update_alpha1=True, update_alpha2=True
+        )
+        s.configure_solver(dt=self.dt, tf=self.tf, adaptive_timestep=False, pfreq=self.pfreq)
+        # Added
+        self.SchemeChooser = s
+        return s
+"""
 class CustomSedov(SedovPointExplosion):
     def __init__(self,dx,xmin,xmax,ymin,ymax,gamma,DoDomain,mirror_x,mirror_y,xcntr,ycntr,r_init,gaussian,adaptive,cfl,pfreq,tf,dt,scheme,scheme_params) -> None:
         self.dx = dx
@@ -87,8 +99,8 @@ class CustomSedov(SedovPointExplosion):
         volume = dx*dy
 
         rho = np.ones_like(x)
-        p = np.zeros_like(x) + 1e-5
-        e = np.zeros_like(x) + 2.5e-5 # 1e-9
+        p = np.zeros_like(x) # + 1e-5
+        e = np.zeros_like(x) + 1e-9  # 2.5e-5
         m = volume * rho
         h = kernel_factor * (m/rho)**(1/dim)
 
@@ -117,4 +129,4 @@ class CustomSedov(SedovPointExplosion):
               % (fluid.get_number_of_particles()))
 
         return [fluid,]
- 
+

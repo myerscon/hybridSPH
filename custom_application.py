@@ -83,10 +83,18 @@ class CustomApplication(Application):
             hfact=kernel_factor
         )
 
+        mpm_sedov = GasDScheme(
+            fluids=['fluid'], solids=[], dim=dim, gamma=self.gamma,
+            kernel_factor=self.sps[0], alpha1=self.sps[2], alpha2=self.sps[3],
+            beta=self.sps[1], adaptive_h_scheme="gsph",
+            update_alpha1=True, update_alpha2=True
+        )
+
         s = SchemeChooser(
             default=self.scheme_selection, adke=adke, mpm=mpm, gsph=gsph, crksph=crksph,
-            psph=psph, tsph=tsph
+            psph=psph, tsph=tsph, mpm_sedov=mpm_sedov
         )
+
         # Added
         self.SchemeChooser = s
         return s
@@ -94,7 +102,7 @@ class CustomApplication(Application):
     def configure_scheme(self):
         s = self.scheme
         if self.options.scheme == 'mpm':
-            s.configure(kernel_factor=kernel_factor)
+            s.configure(kernel_factor=self.sps[0])
             s.configure_solver(dt=self.dt, tf=self.tf,
                                adaptive_timestep=self.adaptive, cfl=self.cfl, pfreq=self.pfreq)
         elif self.options.scheme == 'adke':
@@ -111,6 +119,10 @@ class CustomApplication(Application):
             s.configure_solver(dt=self.dt, tf=self.tf,
                                adaptive_timestep=self.adaptive, cfl=self.cfl, pfreq=self.pfreq)
         elif self.options.scheme == 'magma2':
+            s.configure_solver(dt=self.dt, tf=self.tf,
+                               adaptive_timestep=self.adaptive, cfl=self.cfl, pfreq=self.pfreq)
+        elif self.options.scheme == 'mpm_sedov':
+            s.configure(kernel_factor=self.sps[0])
             s.configure_solver(dt=self.dt, tf=self.tf,
                                adaptive_timestep=self.adaptive, cfl=self.cfl, pfreq=self.pfreq)
 
