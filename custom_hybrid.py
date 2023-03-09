@@ -5,7 +5,7 @@ import pickle
 from custom_pyro import CustomPyro
 from custom_pysph_shocktube import CustomShockTube2D
 from custom_pysph_sedov import CustomSedov
-from mesh.patch import CellCenterData2d
+from mesh.patch import Grid2d, CellCenterData2d
 from mesh.boundary import BC
 
 class Hybrid_sim():
@@ -24,8 +24,8 @@ class Hybrid_sim():
                                          other_commands=self.other_commands)
         self.pyro_sim.primitive_update()
         
-    def initialize_pysph_shocktube(self,dx,xmin,xmax,ymin,ymax,gamma,DoDomain,mirror_x,mirror_y,adaptive,cfl,pfreq,tf,dt,scheme,scheme_params):
-        self.pysph_sim = CustomShockTube2D(dx,xmin,xmax,ymin,ymax,gamma,DoDomain,mirror_x,mirror_y,adaptive,cfl,pfreq,tf,dt,scheme,scheme_params)
+    def initialize_pysph_shocktube(self,dx,xmin,xmax,ymin,ymax,gamma,kf,DoDomain,mirror_x,mirror_y,adaptive,cfl,pfreq,tf,dt,scheme,scheme_params):
+        self.pysph_sim = CustomShockTube2D(dx,xmin,xmax,ymin,ymax,gamma,kf,DoDomain,mirror_x,mirror_y,adaptive,cfl,pfreq,tf,dt,scheme,scheme_params)
         self.pysph_sim.setup()
         self.pysph_sim.particles[0].add_property(name='particle_type_id',type='double',default=2.0)
         self.pysph_sim.particles[0].add_property(name='id',type='int',default=-1)
@@ -40,8 +40,8 @@ class Hybrid_sim():
         self.pysph_sim.particles[0].add_property(name='x1',type='double',default=0.0)
         self.pysph_sim.particles[0].add_property(name='y1',type='double',default=0.0)
 
-    def initialize_pysph_sedov(self,dx,xmin,xmax,ymin,ymax,gamma,DoDomain,mirror_x,mirror_y,xcntr,ycntr,r_init,gaussian,adaptive,cfl,pfreq,tf,dt,scheme,scheme_params):
-        self.pysph_sim = CustomSedov(dx,xmin,xmax,ymin,ymax,gamma,DoDomain,mirror_x,mirror_y,xcntr,ycntr,r_init,gaussian,adaptive,cfl,pfreq,tf,dt,scheme,scheme_params)
+    def initialize_pysph_sedov(self,dx,xmin,xmax,ymin,ymax,gamma,kf,DoDomain,mirror_x,mirror_y,xcntr,ycntr,r_init,gaussian,adaptive,cfl,pfreq,tf,dt,scheme,scheme_params):
+        self.pysph_sim = CustomSedov(dx,xmin,xmax,ymin,ymax,gamma,kf,DoDomain,mirror_x,mirror_y,xcntr,ycntr,r_init,gaussian,adaptive,cfl,pfreq,tf,dt,scheme,scheme_params)
         self.pysph_sim.setup()
         self.pysph_sim.particles[0].add_property(name='particle_type_id',type='double',default=2.0)
         self.pysph_sim.particles[0].add_property(name='id',type='int',default=-1)
@@ -67,10 +67,19 @@ class Hybrid_sim():
         """
         assert np.log2(shrink_factor).is_integer(), "shrink_factor must be a factor of 2."
         
+        ##2/27# Extract Pyro grid parameters
+        #xmin = self.pyro_sim.sim.cc_data.grid.xmin
+        #xmax = self.pyro_sim.sim.cc_data.grid.xmax
+        #ymin = self.pyro_sim.sim.cc_data.grid.ymin
+        #ymax = self.pyro_sim.sim.cc_data.grid.ymax
+        #nx = shrink_factor*self.pyro_sim.sim.cc_data.grid.nx
+        #ny = shrink_factor*self.pyro_sim.sim.cc_data.grid.ny
+        #ng = shrink_factor*self.pyro_sim.sim.cc_data.grid.ng
+        #new_grid = Grid2d(nx=nx,ny=ny,ng=ng,xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax)
         new_grid = self.pyro_sim.sim.cc_data.grid.fine_like(shrink_factor)
         self.injection_map = CellCenterData2d(new_grid)
-        self.injection_map.shrink_factor = shrink_factor
         self.injection_map.grid = new_grid
+        self.injection_map.shrink_factor = shrink_factor
         # Boundaries not used, creating outflow boundaries just in case
         bc = BC(xlb="outflow", xrb="outflow",ylb="outflow", yrb="outflow")
         self.injection_map.register_var("particle_map",bc)
@@ -107,8 +116,11 @@ class Hybrid_sim():
         # Compute new gradient_flag_mirror
         ghosts = self.pyro_sim.sim.cc_data.grid.ng
         shrink = self.injection_map.shrink_factor
+        x_len = len(self.injection_map.data[:,0,0]) #
+        y_len = len(self.injection_map.data[0,:,0]) #
         for i in range(shrink):
             for j in range(shrink):
+                #2/27#self.injection_map.data[i:x_len:shrink,j:y_len:shrink,1] += self.pyro_sim.sim.cc_data.gradient_final[:,:] # expanded to include ghosts
                 self.injection_map.data[ghosts+i:-ghosts:shrink,ghosts+j:-ghosts:shrink,1] += self.pyro_sim.sim.cc_data.gradient_final[ghosts:-ghosts,ghosts:-ghosts]
         
     def update_particle_map(self):
@@ -122,6 +134,15 @@ class Hybrid_sim():
         binary_flag_mirror = np.where(self.injection_map.data[:,:,1]>0,1,0)
         difference = binary_flag_mirror - self.injection_map.data[:,:,2]
         self.injection_map.data[:,:,0] = np.where(difference==1,1,0)
+        ## 2/27 update: exclude edges of injection_map
+        #self.injection_map.data[:8,:,0] = 0 # np.zeros(len(self.injection_map.data[0,:,0]))
+        ##self.injection_map.data[1,:,0] = 0 # np.zeros(len(self.injection_map.data[1,:,0]))
+        #self.injection_map.data[-8:,:,0] = 0 # np.zeros(len(self.injection_map.data[-1,:,0]))
+        ##self.injection_map.data[-2,:,0] = 0 # np.zeros(len(self.injection_map.data[-2,:,0]))
+        #self.injection_map.data[:,:8,0] = 0 # np.zeros(len(self.injection_map.data[:,0,0]))
+        ##self.injection_map.data[:,1,0] = 0 # np.zeros(len(self.injection_map.data[:,1,0]))
+        #self.injection_map.data[:,-8:,0] = 0 # np.zeros(len(self.injection_map.data[:,-1,0]))
+        ##self.injection_map.data[:,-2,0] = 0 # np.zeros(len(self.injection_map.data[:,-2,0]))
         
     def inject_particles(self):
         """ Injects new SPH particles in regions where the injection map is equal to 1.
@@ -131,7 +152,7 @@ class Hybrid_sim():
             None
         """
         grid = self.injection_map.grid
-        x_vals = np.extract(self.injection_map.data[:,:,0]>0,grid.x2d)
+        x_vals = np.extract(self.injection_map.data[:,:,0]>0,grid.x2d-((self.injection_map.shrink_factor/2)*self.injection_map.grid.dx)) # 2
         y_vals = np.extract(self.injection_map.data[:,:,0]>0,grid.y2d)
         self.pysph_sim.add_particles([x_vals,y_vals])
         
@@ -144,9 +165,94 @@ class Hybrid_sim():
         Returns:
             None
         """
+        x_bins = np.digitize(self.pysph_sim.particles[0].x, self.injection_map.grid.x) # , right=True
+        y_bins = np.digitize(self.pysph_sim.particles[0].y, self.injection_map.grid.y) # , right=True
+        self.pysph_sim.particles[0].particle_type_id = self.injection_map.data[x_bins,y_bins-1,1] # -1
+
+    def flag_pysph_particles_old(self):
+        """ Flags pysph particles based on value of pyro_sim.sim.cc_data.gradient_final at each cell. 
+            Particle values (2, 1, or 0) reflect gradient_final values corresponding to active, boundary,
+            or void (marked for deletion) particles.
+        Args:
+            self
+        Returns:
+            None
+        """
         x_bins = np.digitize(self.pysph_sim.particles[0].x, self.pyro_sim.sim.cc_data.grid.x)
+        ## addition for larger mesh error. Send to zero which is in pyro boundary cells
+        #x_bins = np.where(x_bins<self.pyro_sim.sim.cc_data.grid.nx+2*self.pyro_sim.sim.cc_data.grid.ng-1,x_bins,0) #
         y_bins = np.digitize(self.pysph_sim.particles[0].y, self.pyro_sim.sim.cc_data.grid.y)
+        #y_bins = np.where(y_bins<self.pyro_sim.sim.cc_data.grid.ny+2*self.pyro_sim.sim.cc_data.grid.ng-1,y_bins,0) #
         self.pysph_sim.particles[0].particle_type_id = self.pyro_sim.sim.cc_data.gradient_final[x_bins,y_bins]
+
+    def flag_pysph_wall_particles(self,x_walls=None,y_walls=None):
+        """ Sets type id of particles outside the bounds of x_walls or y_walls to 1.1 (code for boundary particles).
+        Note: call self.pysph_sim.particle_sort() before
+        Args:
+            self
+            x_walls [double,double]: lower and upper bounds for x wall boundary
+            y_walls [double,double]: lower and upper bounds for x wall boundary
+        Returns:
+            None
+        """
+        if (x_walls is not None):
+            indexes_lower = np.extract(self.pysph_sim.particles[0].x<x_walls[0],self.pysph_sim.particles[0].id)
+            indexes_higher = np.extract(self.pysph_sim.particles[0].x>x_walls[1],self.pysph_sim.particles[0].id)
+            #indexes = np.concatenate((indexes_lower,indexes_higher))
+            #self.pysph_sim.particles[0].particle_type_id[indexes] = np.where(self.pysph_sim.particles[0].particle_type_id>0,1.1,0)
+            self.pysph_sim.particles[0].particle_type_id[indexes_lower] = np.where(self.pysph_sim.particles[0].particle_type_id[indexes_lower]>0,1.1,0)
+            self.pysph_sim.particles[0].particle_type_id[indexes_higher] = np.where(self.pysph_sim.particles[0].particle_type_id[indexes_higher]>0,1.1,0)
+        if (y_walls is not None):
+            indexes_lower = np.extract(self.pysph_sim.particles[0].y<y_walls[0],self.pysph_sim.particles[0].id)
+            indexes_higher = np.extract(self.pysph_sim.particles[0].y>y_walls[1],self.pysph_sim.particles[0].id)
+            #indexes = np.concatenate((indexes_lower,indexes_higher))
+            #self.pysph_sim.particles[0].particle_type_id[indexes] = np.where(self.pysph_sim.particles[0].particle_type_id>0,1.1,0)
+            self.pysph_sim.particles[0].particle_type_id[indexes_lower] = np.where(self.pysph_sim.particles[0].particle_type_id[indexes_lower]>0,1.1,0)
+            self.pysph_sim.particles[0].particle_type_id[indexes_higher] = np.where(self.pysph_sim.particles[0].particle_type_id[indexes_higher]>0,1.1,0)
+
+    ###
+    ### PROBLEM SPECIFIC FUNCTIONS
+    ###
+
+    def shocktube_vertical_injection(self,boundary_width):
+        """ Creates vertically uniform injection for quasi1D shocktube problem.
+        Call after extend_flag_to_particle_map() and before update_particle_map()
+        Args:
+            self
+            boundary_width: boundary width value used for flagging
+        Returns:
+            None
+        """
+        # Fill gaps first
+        # Adding filter to convert boundary cells surrounded by active cells to active cells
+        middle_index = len(self.pyro_sim.sim.cc_data.gradient_final[0])//2 # find y-center of gradient final
+        middle_slice = self.pyro_sim.sim.cc_data.gradient_final[:,middle_index]
+        sliced_array = np.split(middle_slice,np.where(np.diff(middle_slice) != 0)[0]+1)
+        # Loop over sliced array, ignoring outer 2 slices on each end (pyro regions and outer boundary regions)
+        for i in range(len(sliced_array)-4):
+            if (sliced_array[i+2][0] == 1):
+                if (len(sliced_array[i+2])<2*boundary_width+1):
+                    sliced_array[i+2] *= 2
+        # Substitute new middle slice back into gradient_final
+        self.pyro_sim.sim.cc_data.gradient_final[:,middle_index] = np.concatenate(sliced_array)
+
+        # For now, create vertical uniformity
+
+        x_len = self.injection_map.grid.nx+2*self.injection_map.grid.ng
+        y_len = self.injection_map.grid.ny+2*self.injection_map.grid.ng
+        tmp_matrix = np.ones((x_len,y_len))
+        for i in range(len(tmp_matrix[0])):
+            tmp_matrix[:,i] = np.amax(self.injection_map.data[:,:,1],axis=1)
+        self.injection_map.data[:,:,1] = tmp_matrix
+
+        # copy for self.pyro_sim.sim.cc_data.gradient_final while using flag_pysph_particles_old
+
+        x_len = self.pyro_sim.sim.cc_data.grid.nx+2*self.pyro_sim.sim.cc_data.grid.ng
+        y_len = self.pyro_sim.sim.cc_data.grid.ny+2*self.pyro_sim.sim.cc_data.grid.ng
+        tmp_matrix = np.ones((x_len,y_len))
+        for i in range(len(tmp_matrix[0])):
+            tmp_matrix[:,i] = np.amax(self.pyro_sim.sim.cc_data.gradient_final[:,:],axis=1)
+        self.pyro_sim.sim.cc_data.gradient_final[:,:] = tmp_matrix
 
     ###
     ### BOUNDARY FUNCTIONS
@@ -253,9 +359,9 @@ class Hybrid_sim():
             None
         """
         #self.pysph_sim.particle_sort()
-        physical_ids = np.extract(self.pysph_sim.particles[0].particle_type_id == 2.0,
+        physical_ids = np.extract(self.pysph_sim.particles[0].particle_type_id < 1.1, # == 2.0
                             self.pysph_sim.particles[0].id)
-        inside_ids = np.extract(self.pysph_sim.particles[0].particle_type_id == 1.0,
+        inside_ids = np.extract(self.pysph_sim.particles[0].particle_type_id > 1.1, # == 1.0
                             self.pysph_sim.particles[0].id)
         real_ids = np.concatenate((physical_ids,inside_ids))
         w = np.histogram(self.pysph_sim.particles[0].x[real_ids],self.injection_map.grid.x)[0]
@@ -312,7 +418,10 @@ class Hybrid_sim():
         #elif (mode == 'boundary'):
         #    extracted_ids = np.extract(self.pysph_sim.particles[0].particle_type_id == 1.1,self.pysph_sim.particles[0].id)
         else:
-            extracted_ids = np.extract(self.pysph_sim.particles[0].particle_type_id == 1,self.pysph_sim.particles[0].id)
+            # 2/28: modifying to include wall boundary particles
+            #extracted_ids = np.extract(self.pysph_sim.particles[0].particle_type_id == 1,self.pysph_sim.particles[0].id)
+            extracted_ids0 = np.extract(self.pysph_sim.particles[0].particle_type_id > 0,self.pysph_sim.particles[0].id)
+            extracted_ids = np.extract(self.pysph_sim.particles[0].particle_type_id[extracted_ids0] < 2,self.pysph_sim.particles[0].id)
             # attempted fix
             extracted_ids = extracted_ids[np.argsort(extracted_ids)]
         particles_x = self.pysph_sim.particles[0].x[extracted_ids]
@@ -345,13 +454,16 @@ class Hybrid_sim():
                                                  + x_i_0*y_1_i*self.pyro_sim.sim.cc_data.prim_array[x_bins,y_bins-1,3]
                                                  + x_1_i*y_i_0*self.pyro_sim.sim.cc_data.prim_array[x_bins-1,y_bins,3]
                                                  + x_i_0*y_i_0*self.pyro_sim.sim.cc_data.prim_array[x_bins-1,y_bins,3])
-        self.pysph_sim.particles[0].e[extracted_ids] = (x_1_i*y_1_i*self.pyro_sim.sim.cc_data.data[x_bins-1,y_bins-1,1]
-                                                 + x_i_0*y_1_i*self.pyro_sim.sim.cc_data.data[x_bins,y_bins-1,1]
-                                                 + x_1_i*y_i_0*self.pyro_sim.sim.cc_data.data[x_bins-1,y_bins,1]
-                                                 + x_i_0*y_i_0*self.pyro_sim.sim.cc_data.data[x_bins-1,y_bins,1])
+        #self.pysph_sim.particles[0].e[extracted_ids] = (x_1_i*y_1_i*self.pyro_sim.sim.cc_data.data[x_bins-1,y_bins-1,1]
+        #                                         + x_i_0*y_1_i*self.pyro_sim.sim.cc_data.data[x_bins,y_bins-1,1]
+        #                                         + x_1_i*y_i_0*self.pyro_sim.sim.cc_data.data[x_bins-1,y_bins,1]
+        #                                         + x_i_0*y_i_0*self.pyro_sim.sim.cc_data.data[x_bins-1,y_bins,1])
+        # 3/1: e = p / (self.gamma1 * rho)
+        self.pysph_sim.particles[0].e[extracted_ids] = self.pysph_sim.particles[0].p[extracted_ids]/(self.pysph_sim.gamma1*self.pysph_sim.particles[0].rho[extracted_ids])
         self.pysph_sim.particles[0].m[extracted_ids] = self.injection_map.unit_volume * self.pysph_sim.particles[0].rho[extracted_ids]
-        self.pysph_sim.particles[0].h[extracted_ids] = np.sqrt(self.pysph_sim.particles[0].m[extracted_ids]/self.pysph_sim.particles[0].rho[extracted_ids])
-      
+        #self.pysph_sim.particles[0].h[extracted_ids] = np.sqrt(self.pysph_sim.particles[0].m[extracted_ids]/self.pysph_sim.particles[0].rho[extracted_ids])
+        self.pysph_sim.particles[0].h[extracted_ids] = self.pysph_sim.kernel_factor * self.pysph_sim.dx
+
     def pysph_to_pyro(self,mode=None):
         """ Transfers pysph field data to pyro primitive variables via 2d linear interpolation
         Args:
@@ -367,7 +479,10 @@ class Hybrid_sim():
         ghosts1 = ghosts - 1
         
         x_bins = np.digitize(self.pysph_sim.particles[0].x, self.pyro_sim.sim.cc_data.grid.x)
+        ## addition for larger mesh error. Send to zero which is in pyro boundary cells
+        #x_bins = np.where(x_bins<self.pyro_sim.sim.cc_data.grid.nx+2*self.pyro_sim.sim.cc_data.grid.ng-1,x_bins,0) #
         y_bins = np.digitize(self.pysph_sim.particles[0].y, self.pyro_sim.sim.cc_data.grid.y)
+        #y_bins = np.where(y_bins<self.pyro_sim.sim.cc_data.grid.ny+2*self.pyro_sim.sim.cc_data.grid.ng-1,y_bins,0) #
 
         inv_dx = 1/self.pyro_sim.sim.cc_data.grid.dx
         inv_dy = 1/self.pyro_sim.sim.cc_data.grid.dy
@@ -470,7 +585,7 @@ class Hybrid_sim():
 
         fig, axs = plt.subplots(1,1,sharex=True)
 
-        my_plot0 = axs.scatter(x_vals, y_vals, c=flag_map, cmap='coolwarm')
+        my_plot0 = axs.scatter(x_vals, y_vals, c=flag_map, s=10*self.injection_map.grid.dx, cmap='coolwarm')
         axs.set_aspect('equal')
         axs.set_title('Injection Map')
         axs.set_xlim(xlims)

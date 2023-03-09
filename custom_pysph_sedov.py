@@ -78,12 +78,13 @@ class SedovPointExplosion(CustomApplication):
         return s
 """
 class CustomSedov(SedovPointExplosion):
-    def __init__(self,dx,xmin,xmax,ymin,ymax,gamma,DoDomain,mirror_x,mirror_y,xcntr,ycntr,r_init,gaussian,adaptive,cfl,pfreq,tf,dt,scheme,scheme_params) -> None:
+    def __init__(self,dx,xmin,xmax,ymin,ymax,gamma,kf,DoDomain,mirror_x,mirror_y,xcntr,ycntr,r_init,gaussian,adaptive,cfl,pfreq,tf,dt,scheme,scheme_params) -> None:
         self.dx = dx
         self.xmin = xmin
         self.xmax = xmax
         self.ymin = ymin
         self.ymax = ymax
+        self.kernel_factor = kf
         self.xcntr = xcntr
         self.ycntr = ycntr
         self.r_init = r_init

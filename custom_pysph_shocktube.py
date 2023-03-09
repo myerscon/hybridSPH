@@ -47,12 +47,13 @@ kernel_factor = 1.5
 #    pass
 
 class ShockTube2D(CustomApplication):
-    def __init__(self,dx,xmin,xmax,ymin,ymax,gamma,DoDomain,mirror_x,mirror_y,adaptive,cfl,pfreq,tf,dt,scheme,scheme_params) -> None:
+    def __init__(self,dx,xmin,xmax,ymin,ymax,gamma,kf,DoDomain,mirror_x,mirror_y,adaptive,cfl,pfreq,tf,dt,scheme,scheme_params) -> None:
         self.dx = dx
         self.xmin = xmin
         self.xmax = xmax
         self.ymin = ymin
         self.ymax = ymax
+        self.kernel_factor = kf
         #self.adaptive = adaptive
         #self.cfl = cfl
         #self.pfreq = pfreq
@@ -129,7 +130,7 @@ class ShockTube2D(CustomApplication):
             p[right_indices] = self.pr
 
         # const h and mass
-        h = np.ones_like(x) * self.hdx * self.dx
+        h = np.ones_like(x) * self.kernel_factor * self.dx # np.ones_like(x) * self.hdx * self.dx
         m = np.ones_like(x) * volume * rho
 
         # ul = ur = 0
@@ -153,8 +154,8 @@ class ShockTube2D(CustomApplication):
         return [fluid, ]
 
 class CustomShockTube2D(ShockTube2D):
-    def __init__(self,dx,xmin,xmax,ymin,ymax,gamma,DoDomain,mirror_x,mirror_y,adaptive,cfl,pfreq,tf,dt,scheme,scheme_params) -> None:
-        super().__init__(dx,xmin,xmax,ymin,ymax,gamma,DoDomain,mirror_x,mirror_y,adaptive,cfl,pfreq,tf,dt,scheme,scheme_params)
+    def __init__(self,dx,xmin,xmax,ymin,ymax,gamma,kf,DoDomain,mirror_x,mirror_y,adaptive,cfl,pfreq,tf,dt,scheme,scheme_params) -> None:
+        super().__init__(dx,xmin,xmax,ymin,ymax,gamma,kf,DoDomain,mirror_x,mirror_y,adaptive,cfl,pfreq,tf,dt,scheme,scheme_params)
 
     ###
     ### PLOTTING FUNCTIONS

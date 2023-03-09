@@ -60,12 +60,13 @@ class CustomApplication(Application):
             density_iteration_tolerance=1e-4, has_ghosts=True
         )
 
+        # Changing niter=40
         gsph = GSPHScheme(
             fluids=['fluid'], solids=[], dim=dim, gamma=self.gamma,
             kernel_factor=self.sps[0],
             g1=self.sps[2], g2=self.sps[3], rsolver=2, interpolation=self.sps[4], monotonicity=self.sps[5],
             interface_zero=True, hybrid=False, blend_alpha=2.0,
-            niter=40, tol=1e-6, has_ghosts=True
+            niter=4000, tol=1e-6, has_ghosts=True
         )
 
         crksph = CRKSPHScheme(
@@ -187,6 +188,7 @@ class CustomApplication(Application):
             None
         """
         #self.particles[0].id = np.argsort(self.particles[0].orig_idx)
+        self.particles[0].align_particles()
         self.particles[0].id = np.arange(len(self.particles[0].x))
 
     def add_particles(self, coords):
@@ -239,19 +241,19 @@ class CustomApplication(Application):
 
         fig, axs = plt.subplots(4,1,sharex=True,sharey=True)
 
-        my_plot0 = axs[0].scatter(x_vals,y_vals,c=p_vals,cmap="YlOrRd",s=1,vmin=p_min,vmax=p_max)
+        my_plot0 = axs[0].scatter(x_vals,y_vals,c=p_vals,cmap="YlOrRd",s=10*self.dx,vmin=p_min,vmax=p_max)
         ax_cb0 = fig.add_axes([1.0, 0.1, .02, 0.8])
         cb0 = plt.colorbar(my_plot0,ax=axs[0],cax=ax_cb0)
 
-        my_plot1 = axs[1].scatter(x_vals,y_vals,c=u_vals,cmap="PRGn",s=1,vmin=u_min,vmax=u_max)
+        my_plot1 = axs[1].scatter(x_vals,y_vals,c=u_vals,cmap="PRGn",s=10*self.dx,vmin=u_min,vmax=u_max)
         ax_cb1 = fig.add_axes([1.1, 0.1, .02, 0.8])
         cb1 = plt.colorbar(my_plot1,ax=axs[1],cax=ax_cb1)
 
-        my_plot2 = axs[2].scatter(x_vals,y_vals,c=v_vals,cmap="BrBG",s=1,vmin=v_min,vmax=v_max)
+        my_plot2 = axs[2].scatter(x_vals,y_vals,c=v_vals,cmap="BrBG",s=10*self.dx,vmin=v_min,vmax=v_max)
         ax_cb2 = fig.add_axes([1.2, 0.1, .02, 0.8])
         cb2 = plt.colorbar(my_plot2,ax=axs[2],cax=ax_cb2)
 
-        my_plot3 = axs[3].scatter(x_vals,y_vals,c=rho_vals,cmap="Blues",s=1,vmin=rho_min,vmax=rho_max)
+        my_plot3 = axs[3].scatter(x_vals,y_vals,c=rho_vals,cmap="Blues",s=10*self.dx,vmin=rho_min,vmax=rho_max)
         ax_cb3 = fig.add_axes([1.3, 0.1, .02, 0.8])
         cb3 = plt.colorbar(my_plot3,ax=axs[3],cax=ax_cb3)
 
@@ -305,19 +307,19 @@ class CustomApplication(Application):
 
         fig, axs = plt.subplots(2,2,sharex=True,sharey=True)
 
-        my_plot0 = axs[0,0].scatter(x_vals,y_vals,c=p_vals,cmap="YlOrRd",s=1,vmin=p_min,vmax=p_max)
+        my_plot0 = axs[0,0].scatter(x_vals,y_vals,c=p_vals,cmap="YlOrRd", s=10*self.dx,vmin=p_min,vmax=p_max)
         ax_cb0 = fig.add_axes([1.0, 0.1, .02, 0.8])
         cb0 = plt.colorbar(my_plot0,ax=axs[0,0],cax=ax_cb0)
 
-        my_plot1 = axs[0,1].scatter(x_vals,y_vals,c=u_vals,cmap="PRGn",s=1,vmin=u_min,vmax=u_max)
+        my_plot1 = axs[0,1].scatter(x_vals,y_vals,c=u_vals,cmap="PRGn",s=10*self.dx,vmin=u_min,vmax=u_max)
         ax_cb1 = fig.add_axes([1.1, 0.1, .02, 0.8])
         cb1 = plt.colorbar(my_plot1,ax=axs[0,1],cax=ax_cb1)
 
-        my_plot2 = axs[1,0].scatter(x_vals,y_vals,c=v_vals,cmap="BrBG",s=1,vmin=v_min,vmax=v_max)
+        my_plot2 = axs[1,0].scatter(x_vals,y_vals,c=v_vals,cmap="BrBG",s=10*self.dx,vmin=v_min,vmax=v_max)
         ax_cb2 = fig.add_axes([1.2, 0.1, .02, 0.8])
         cb2 = plt.colorbar(my_plot2,ax=axs[1,0],cax=ax_cb2)
 
-        my_plot3 = axs[1,1].scatter(x_vals,y_vals,c=rho_vals,cmap="Blues",s=1,vmin=rho_min,vmax=rho_max)
+        my_plot3 = axs[1,1].scatter(x_vals,y_vals,c=rho_vals,cmap="Blues",s=10*self.dx,vmin=rho_min,vmax=rho_max)
         ax_cb3 = fig.add_axes([1.3, 0.1, .02, 0.8])
         cb3 = plt.colorbar(my_plot3,ax=axs[1,1],cax=ax_cb3)
 
@@ -352,11 +354,107 @@ class CustomApplication(Application):
         id_vals = self.particles[0].particle_type_id
 
         fig, axs = plt.subplots(1,1,sharex=True)
-        my_plot0 = axs.scatter(x_vals, y_vals, c=id_vals, cmap='coolwarm')
+        my_plot0 = axs.scatter(x_vals, y_vals, c=id_vals, cmap='viridis', s=100*self.dx, vmin=0, vmax=2) # cmap='coolwarm', s=10*self.dx
         axs.set_aspect('equal')
         axs.set_title('Particle Type')
         axs.set_xlim(xlims)
         axs.set_ylim(ylims)
+        #plt.colorbar(my_plot0)
+        plt.show()
+
+    ### DEBUGGING PLOTS
+
+    def plot_vertical_full(self,cbar_range=None,xlims=[0.,1.],ylims=[0.,0.05]):
+        """ Scatter plot with four subplots corresponding to p, u, v, and rho in a vertical format. Useful for visualizing shocktube results.
+        Args:
+            self
+            cbar_range (double array): array of 8 values corresponding to max and min plotting values of p, u, v, and rho.
+        Returns:
+            None
+        """
+        x_vals = self.particles[0].x
+        y_vals = self.particles[0].y
+        rho_vals = self.particles[0].rho
+        u_vals = self.particles[0].u
+        v_vals = self.particles[0].v
+        p_vals = self.particles[0].p
+        e_vals = self.particles[0].e
+        h_vals = self.particles[0].h
+        m_vals = self.particles[0].m
+
+        if (cbar_range):
+            [p_min,p_max,u_min,u_max,v_min,v_max,rho_min,rho_max] = cbar_range
+        else:
+            p_min = min(p_vals)
+            p_max = max(p_vals)
+            u_min = min(u_vals)
+            u_max = max(u_vals)
+            if (abs(u_min)>u_max):
+                u_max = abs(u_min)
+            else:
+                u_min = - u_max
+            v_min = min(v_vals)
+            v_max = max(v_vals)
+            if (abs(v_min)>v_max):
+                v_max = abs(v_min)
+            else:
+                v_min = - v_max
+            rho_min = min(rho_vals)
+            rho_max = max(rho_vals)
+        e_min = min(e_vals)
+        e_max = max(e_vals)
+        h_min = min(h_vals)
+        h_max = max(h_vals)
+        m_min = min(m_vals)
+        m_max = max(m_vals)
+
+        fig, axs = plt.subplots(7,1,sharex=True,sharey=True)
+
+        my_plot0 = axs[0].scatter(x_vals,y_vals,c=p_vals,cmap="YlOrRd",s=100*self.dx,vmin=p_min,vmax=p_max)
+        ax_cb0 = fig.add_axes([1.0, 0.1, .02, 0.8])
+        cb0 = plt.colorbar(my_plot0,ax=axs[0],cax=ax_cb0)
+
+        my_plot1 = axs[1].scatter(x_vals,y_vals,c=u_vals,cmap="PRGn",s=100*self.dx,vmin=u_min,vmax=u_max)
+        ax_cb1 = fig.add_axes([1.1, 0.1, .02, 0.8])
+        cb1 = plt.colorbar(my_plot1,ax=axs[1],cax=ax_cb1)
+
+        my_plot2 = axs[2].scatter(x_vals,y_vals,c=v_vals,cmap="BrBG",s=100*self.dx,vmin=v_min,vmax=v_max)
+        ax_cb2 = fig.add_axes([1.2, 0.1, .02, 0.8])
+        cb2 = plt.colorbar(my_plot2,ax=axs[2],cax=ax_cb2)
+
+        my_plot3 = axs[3].scatter(x_vals,y_vals,c=rho_vals,cmap="Blues",s=100*self.dx,vmin=rho_min,vmax=rho_max)
+        ax_cb3 = fig.add_axes([1.3, 0.1, .02, 0.8])
+        cb3 = plt.colorbar(my_plot3,ax=axs[3],cax=ax_cb3)
+
+        my_plot4 = axs[4].scatter(x_vals,y_vals,c=e_vals,cmap="Oranges",s=100*self.dx,vmin=e_min,vmax=e_max)
+        ax_cb4 = fig.add_axes([1.4, 0.1, .02, 0.8])
+        cb4 = plt.colorbar(my_plot4,ax=axs[4],cax=ax_cb4)
+
+        my_plot5 = axs[5].scatter(x_vals,y_vals,c=h_vals,cmap="Purples",s=100*self.dx,vmin=h_min,vmax=h_max)
+        ax_cb5 = fig.add_axes([1.5, 0.1, .02, 0.8])
+        cb5 = plt.colorbar(my_plot5,ax=axs[5],cax=ax_cb5)
+
+        my_plot6 = axs[6].scatter(x_vals,y_vals,c=m_vals,cmap="Greys",s=100*self.dx,vmin=m_min,vmax=m_max)
+        ax_cb6 = fig.add_axes([1.6, 0.1, .02, 0.8])
+        cb6 = plt.colorbar(my_plot6,ax=axs[6],cax=ax_cb6)
+
+        axs[0].set_xlim(xlims)
+        axs[0].set_ylim(ylims)
+
+        axs[0].set_aspect('equal')
+        axs[0].set_title('Pressure')
+        axs[1].set_aspect('equal')
+        axs[1].set_title('X Velocity')
+        axs[2].set_aspect('equal')
+        axs[2].set_title('Y Velocity')
+        axs[3].set_aspect('equal')
+        axs[3].set_title('Density')
+        axs[4].set_aspect('equal')
+        axs[4].set_title('Energy')
+        axs[5].set_aspect('equal')
+        axs[5].set_title('Smoothing Length')
+        axs[6].set_aspect('equal')
+        axs[6].set_title('Mass')
         plt.show()
 
 # Not included in master class: create_particles(), initialize()
