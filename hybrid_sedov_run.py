@@ -35,11 +35,11 @@ sub_count = 0
 # hybrid parameters
 active_width = 1 # 4
 boundary_width = 1 # 4
-thresholds = [12,12,12,12] # [12,12,12,12] # [24,24,24,24]
+thresholds = [12,12,12,12] # [24,24,24,24]
 
 # Make Values Uniform
-hybrid_sedov.pyro_sim.sim.cc_data.data[:,:,1] = 1e-9 # 2.5e-5
-hybrid_sedov.pyro_sim.sim.cc_data.prim_array[:,:,3] = 0 # 1e-5
+hybrid_sedov.pyro_sim.sim.cc_data.data[:,:,1] = 1e-9
+hybrid_sedov.pyro_sim.sim.cc_data.prim_array[:,:,3] = 0
 
 # Calculate Cell Volume
 unit_volume = hybrid_sedov.pyro_sim.sim.cc_data.grid.dx * hybrid_sedov.pyro_sim.sim.cc_data.grid.dy
@@ -48,7 +48,6 @@ unit_volume = hybrid_sedov.pyro_sim.sim.cc_data.grid.dx * hybrid_sedov.pyro_sim.
 if (len(hybrid_sedov.pyro_sim.sim.cc_data.data[:,:,1])%2==0):
     lower_index = len(hybrid_sedov.pyro_sim.sim.cc_data.data)//2 - 1
     hybrid_sedov.pyro_sim.sim.cc_data.data[lower_index:lower_index+2,lower_index:lower_index+2,1] = 0.25/unit_volume
-    # Calculate Pressure (e = p / (gamma-1)); gamma = 1.4
     hybrid_sedov.pyro_sim.sim.cc_data.prim_array[:,:,3] = 0.4 * hybrid_sedov.pyro_sim.sim.cc_data.data[:,:,1]
 else:
     index = len(hybrid_sedov.pyro_sim.sim.cc_data.data)//2

@@ -3,7 +3,7 @@ import time
 from custom_hybrid import Hybrid_sim
 
 filepath = 'saved_data/shocktube/'
-file_name = 'hybrid_shocktube_001_250/' #hy
+file_name = 'hybrid_shocktube_001_250/' #
 
 # Simulation Parameters (Pyro/PySPH)
 solver = "compressible"
