@@ -122,6 +122,8 @@ class Hybrid_sim():
             for j in range(shrink):
                 #2/27#self.injection_map.data[i:x_len:shrink,j:y_len:shrink,1] += self.pyro_sim.sim.cc_data.gradient_final[:,:] # expanded to include ghosts
                 self.injection_map.data[ghosts+i:-ghosts:shrink,ghosts+j:-ghosts:shrink,1] += self.pyro_sim.sim.cc_data.gradient_final[ghosts:-ghosts,ghosts:-ghosts]
+        # injection map centralization fix
+        #self.injection_map.data[:,:,1] = np.roll((np.roll(self.injection_map.data[:,:,1],shift=int(shrink/2),axis=0)),shift=-1,axis=1)
         
     def update_particle_map(self):
         """ Calculates the difference between gradient_flag_mirror and gradient_flag_old to update particle_map
@@ -153,7 +155,7 @@ class Hybrid_sim():
         """
         grid = self.injection_map.grid
         x_vals = np.extract(self.injection_map.data[:,:,0]>0,grid.x2d-((self.injection_map.shrink_factor/2)*self.injection_map.grid.dx)) # 2
-        y_vals = np.extract(self.injection_map.data[:,:,0]>0,grid.y2d)
+        y_vals = np.extract(self.injection_map.data[:,:,0]>0,grid.y2d-((self.injection_map.shrink_factor/2)*self.injection_map.grid.dy)) # 2d sims
         self.pysph_sim.add_particles([x_vals,y_vals])
         
     def flag_pysph_particles(self):
@@ -165,9 +167,10 @@ class Hybrid_sim():
         Returns:
             None
         """
-        x_bins = np.digitize(self.pysph_sim.particles[0].x, self.injection_map.grid.x) # , right=True
-        y_bins = np.digitize(self.pysph_sim.particles[0].y, self.injection_map.grid.y) # , right=True
-        self.pysph_sim.particles[0].particle_type_id = self.injection_map.data[x_bins,y_bins-1,1] # -1
+        #shrink = self.injection_map.shrink_factor
+        x_bins = np.digitize(self.pysph_sim.particles[0].x, self.injection_map.grid.x) # xr # +(self.injection_map.grid.dx*shrink/2)
+        y_bins = np.digitize(self.pysph_sim.particles[0].y, self.injection_map.grid.y) # yr # +(self.injection_map.grid.dy*shrink/2)
+        self.pysph_sim.particles[0].particle_type_id = self.injection_map.data[x_bins+1,y_bins+1,1] # x_bins,y_bins,1
 
     def flag_pysph_particles_old(self):
         """ Flags pysph particles based on value of pyro_sim.sim.cc_data.gradient_final at each cell. 
@@ -178,12 +181,12 @@ class Hybrid_sim():
         Returns:
             None
         """
-        x_bins = np.digitize(self.pysph_sim.particles[0].x, self.pyro_sim.sim.cc_data.grid.x)
+        x_bins = np.digitize(self.pysph_sim.particles[0].x, self.pyro_sim.sim.cc_data.grid.x) # xr
         ## addition for larger mesh error. Send to zero which is in pyro boundary cells
         #x_bins = np.where(x_bins<self.pyro_sim.sim.cc_data.grid.nx+2*self.pyro_sim.sim.cc_data.grid.ng-1,x_bins,0) #
-        y_bins = np.digitize(self.pysph_sim.particles[0].y, self.pyro_sim.sim.cc_data.grid.y)
+        y_bins = np.digitize(self.pysph_sim.particles[0].y, self.pyro_sim.sim.cc_data.grid.y) # yr
         #y_bins = np.where(y_bins<self.pyro_sim.sim.cc_data.grid.ny+2*self.pyro_sim.sim.cc_data.grid.ng-1,y_bins,0) #
-        self.pysph_sim.particles[0].particle_type_id = self.pyro_sim.sim.cc_data.gradient_final[x_bins,y_bins]
+        self.pysph_sim.particles[0].particle_type_id = self.pyro_sim.sim.cc_data.gradient_final[x_bins,y_bins] # x_bins,y_bins
 
     def flag_pysph_wall_particles(self,x_walls=None,y_walls=None):
         """ Sets type id of particles outside the bounds of x_walls or y_walls to 1.1 (code for boundary particles).
@@ -392,7 +395,7 @@ class Hybrid_sim():
         """
         boundary_ids = np.extract(self.pysph_sim.particles[0].particle_type_id == 1.1,
                                 self.pysph_sim.particles[0].id)
-        x_bins = np.digitize(self.pysph_sim.particles[0].x[boundary_ids],self.injection_map.grid.x)
+        x_bins = np.digitize(self.pysph_sim.particles[0].x[boundary_ids],self.injection_map.grid.x) # xr
         self.pysph_sim.particles[0].rho[boundary_ids] = self.injection_map.aux['x-density'][x_bins]
         self.pysph_sim.particles[0].p[boundary_ids] = self.injection_map.aux['x-pressure'][x_bins]
         self.pysph_sim.particles[0].e[boundary_ids] = self.injection_map.aux['x-energy'][x_bins]
@@ -427,8 +430,8 @@ class Hybrid_sim():
         particles_x = self.pysph_sim.particles[0].x[extracted_ids]
         particles_y = self.pysph_sim.particles[0].y[extracted_ids]
         
-        x_bins = np.digitize(particles_x, self.pyro_sim.sim.cc_data.grid.x)
-        y_bins = np.digitize(particles_y, self.pyro_sim.sim.cc_data.grid.y)
+        x_bins = np.digitize(particles_x, self.pyro_sim.sim.cc_data.grid.x) # xr
+        y_bins = np.digitize(particles_y, self.pyro_sim.sim.cc_data.grid.y) # yr
         
         inv_dx = 1/self.pyro_sim.sim.cc_data.grid.dx
         inv_dy = 1/self.pyro_sim.sim.cc_data.grid.dy
@@ -478,10 +481,10 @@ class Hybrid_sim():
         ghosts = self.pyro_sim.sim.cc_data.grid.ng
         ghosts1 = ghosts - 1
         
-        x_bins = np.digitize(self.pysph_sim.particles[0].x, self.pyro_sim.sim.cc_data.grid.x)
+        x_bins = np.digitize(self.pysph_sim.particles[0].x, self.pyro_sim.sim.cc_data.grid.x) # xr
         ## addition for larger mesh error. Send to zero which is in pyro boundary cells
         #x_bins = np.where(x_bins<self.pyro_sim.sim.cc_data.grid.nx+2*self.pyro_sim.sim.cc_data.grid.ng-1,x_bins,0) #
-        y_bins = np.digitize(self.pysph_sim.particles[0].y, self.pyro_sim.sim.cc_data.grid.y)
+        y_bins = np.digitize(self.pysph_sim.particles[0].y, self.pyro_sim.sim.cc_data.grid.y) # yr
         #y_bins = np.where(y_bins<self.pyro_sim.sim.cc_data.grid.ny+2*self.pyro_sim.sim.cc_data.grid.ng-1,y_bins,0) #
 
         inv_dx = 1/self.pyro_sim.sim.cc_data.grid.dx
