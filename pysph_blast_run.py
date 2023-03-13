@@ -31,8 +31,8 @@ while (hybrid_blast.pysph_sim.solver.t<hybrid_blast.pysph_sim.solver.tf):
         hybrid_blast.pysph_sim.solver.dt=hybrid_blast.pysph_sim.cfl*hybrid_blast.pysph_sim.particles[0].dt_cfl.min()
         #if (count%10==0):
         #    print("Finished step " + str(count) + ". t=" + str(round(hybrid_blast.pysph_sim.solver.t,6)) + ", dt = " + str(hybrid_blast.pysph_sim.solver.dt) + " ")
-       if (count > max_steps):
-        break
+        if (count > max_steps):
+            break
 end = time.time()
 
 hybrid_blast.save_time(filepath + 'pysph_blast_' + dx_str + '/',(end-start))
