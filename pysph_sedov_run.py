@@ -57,7 +57,6 @@ else:
     end = time.time()
 
 print(end-start)
-pysph_sedov.pysph_sim.plot_square()
 
 pysph_sedov.save_time(filepath + 'pysph_sedov_' + dx_str + '/',(end-start))
 pysph_sedov.save_pysph_data(filepath + 'pysph_sedov_' + dx_str + '/')

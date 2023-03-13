@@ -5,6 +5,7 @@ import pickle
 from custom_pyro import CustomPyro
 from custom_pysph_shocktube import CustomShockTube2D
 from custom_pysph_sedov import CustomSedov
+from custom_pysph_blast import CustomBlast
 from mesh.patch import Grid2d, CellCenterData2d
 from mesh.boundary import BC
 
@@ -41,6 +42,22 @@ class Hybrid_sim():
         self.pysph_sim.particles[0].add_property(name='y1',type='double',default=0.0)
 
     def initialize_pysph_sedov(self,dx,xmin,xmax,ymin,ymax,gamma,kf,DoDomain,mirror_x,mirror_y,xcntr,ycntr,r_init,gaussian,adaptive,cfl,pfreq,tf,dt,scheme,scheme_params):
+        self.pysph_sim = CustomSedov(dx,xmin,xmax,ymin,ymax,gamma,kf,DoDomain,mirror_x,mirror_y,xcntr,ycntr,r_init,gaussian,adaptive,cfl,pfreq,tf,dt,scheme,scheme_params)
+        self.pysph_sim.setup()
+        self.pysph_sim.particles[0].add_property(name='particle_type_id',type='double',default=2.0)
+        self.pysph_sim.particles[0].add_property(name='id',type='int',default=-1)
+        self.pysph_sim.particles[0].add_property(name='dt_cfl',type='double',default=0.0)
+        self.pysph_sim.particles[0].add_property(name='e1',type='double',default=0.0)
+        self.pysph_sim.particles[0].add_property(name='h1',type='double',default=0.0)
+        self.pysph_sim.particles[0].add_property(name='m1',type='double',default=0.0)
+        self.pysph_sim.particles[0].add_property(name='p1',type='double',default=0.0)
+        self.pysph_sim.particles[0].add_property(name='rho1',type='double',default=0.0)
+        self.pysph_sim.particles[0].add_property(name='u1',type='double',default=0.0)
+        self.pysph_sim.particles[0].add_property(name='v1',type='double',default=0.0)
+        self.pysph_sim.particles[0].add_property(name='x1',type='double',default=0.0)
+        self.pysph_sim.particles[0].add_property(name='y1',type='double',default=0.0)
+
+    def initialize_pysph_blast(self,dx,xmin,xmax,ymin,ymax,gamma,kf,DoDomain,mirror_x,mirror_y,xcntr,ycntr,r_init,gaussian,adaptive,cfl,pfreq,tf,dt,scheme,scheme_params):
         self.pysph_sim = CustomSedov(dx,xmin,xmax,ymin,ymax,gamma,kf,DoDomain,mirror_x,mirror_y,xcntr,ycntr,r_init,gaussian,adaptive,cfl,pfreq,tf,dt,scheme,scheme_params)
         self.pysph_sim.setup()
         self.pysph_sim.particles[0].add_property(name='particle_type_id',type='double',default=2.0)

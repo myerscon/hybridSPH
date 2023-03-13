@@ -67,7 +67,7 @@ for j in range(int(0.006/2e-4)):
         if ((hybrid_shocktube.pysph_sim.solver.t+hybrid_shocktube.pysph_sim.solver.dt)>hybrid_shocktube.pyro_sim.sim.cc_data.t):
             hybrid_shocktube.pysph_sim.solver.dt = hybrid_shocktube.pyro_sim.sim.cc_data.t - hybrid_shocktube.pysph_sim.solver.t
         elif(sub_count > 5):
-            hybrid_shocktube.pysph_sim.particles[0].dt_cfl = np.where(hybrid_shocktube.pysph_sim.particles[0].cs>0,hybrid_shocktube.pysph_sim.particles[0].h/hybrid_shocktube.pysph_sim.particles[0].cs,1e-4)
+            hybrid_shocktube.pysph_sim.particles[0].dt_cfl = np.where(hybrid_shocktube.pysph_sim.particles[0].cs>0,hybrid_shocktube.pysph_sim.particles[0].h/hybrid_shocktube.pysph_sim.particles[0].cs,1.0)
             hybrid_shocktube.pysph_sim.solver.dt = hybrid_shocktube.pysph_sim.cfl*hybrid_shocktube.pysph_sim.particles[0].dt_cfl.min()
         hybrid_shocktube.pysph_sim.step(1)
         sub_count += 1

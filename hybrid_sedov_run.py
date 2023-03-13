@@ -81,7 +81,7 @@ for j in range(50): #
         if ((hybrid_sedov.pysph_sim.solver.t+hybrid_sedov.pysph_sim.solver.dt)>hybrid_sedov.pyro_sim.sim.cc_data.t):
             hybrid_sedov.pysph_sim.solver.dt = hybrid_sedov.pyro_sim.sim.cc_data.t - hybrid_sedov.pysph_sim.solver.t
         elif(sub_count > 5):
-            hybrid_sedov.pysph_sim.particles[0].dt_cfl = np.where(hybrid_sedov.pysph_sim.particles[0].cs>0,hybrid_sedov.pysph_sim.particles[0].h/hybrid_sedov.pysph_sim.particles[0].cs,1e-4)
+            hybrid_sedov.pysph_sim.particles[0].dt_cfl = np.where(hybrid_sedov.pysph_sim.particles[0].cs>0,hybrid_sedov.pysph_sim.particles[0].h/hybrid_sedov.pysph_sim.particles[0].cs,1.0)
             hybrid_sedov.pysph_sim.solver.dt = hybrid_sedov.pysph_sim.cfl*hybrid_sedov.pysph_sim.particles[0].dt_cfl.min()
         hybrid_sedov.pysph_sim.step(1)
         sub_count += 1
@@ -94,6 +94,6 @@ for j in range(50): #
     #print("COMPLETED LARGE LOOP NUMBER " + str(j+1) + ". Pyro t=" + str(count*pyro_dt) + " ")
 end = time.time()
 
-hybrid_shocktube.save_time(filepath + file_name,(end-start))
-hybrid_shocktube.save_pysph_data(filepath + file_name + 'pysph_data/')
-hybrid_shocktube.save_pyro_data(filepath + file_name + 'pyro_data/')
+hybrid_sedov.save_time(filepath + file_name,(end-start))
+hybrid_sedov.save_pysph_data(filepath + file_name + 'pysph_data/')
+hybrid_sedov.save_pyro_data(filepath + file_name + 'pyro_data/')
