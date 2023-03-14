@@ -13,10 +13,13 @@ gsph_params = [1.5,None,0.1,0.5,1,2]
 params = [adke_params,mpm_params,gsph_params]
 
 hybrid_blast = Hybrid_sim()
-hybrid_blast.initialize_pyro(solver,problem_name,param_file,other_commands)
 hybrid_blast.initialize_pysph_blast(dx=dx,xmin=0.0,xmax=1.00,ymin=0.0,ymax=1.0,gamma=1.4,kf=1.5,xcntr=0.5,ycntr=0.5,
                                     r_init=0.1,gaussian=False,DoDomain=False,mirror_x=False,mirror_y=False,adaptive=False,
                                     cfl=0.3,pfreq=10000,tf=0.025,dt=1e-4,scheme='gsph',scheme_params=params[2]) #
+
+hybrid_blast.pysph_sim.particles[0].e = np.where(hybrid_blast.pysph_sim.particles[0].p>0,400.0,1e-9)
+hybrid_blast.pysph_sim.particles[0].rho = np.where(hybrid_blast.pysph_sim.particles[0].p>0,4.0,1.0)
+hybrid_blast.pysph_sim.particles[0].p = 0.4*hybrid_blast.pysph_sim.particles[0].rho*hybrid_blast.pysph_sim.particles[0].e
 
 count = 0
 start = time.time()
