@@ -9,7 +9,8 @@ solver = "compressible"
 problem_name = "sedov"
 param_file = "inputs.sedov"
 other_commands = ["driver.max_steps=2400","driver.tmax=0.025","vis.dovis=0",
-                  "mesh.nx=25","mesh.ny=25"] #
+                  "mesh.nx=25","mesh.ny=25",
+                  "mesh.xmin=-1.0","mesh.xmax=1.0","mesh.ymin=-1.0","mesh.ymax=1.0"] #
 
 dx = 0.01 # 
 
@@ -21,7 +22,7 @@ params = [adke_params,mpm_params,gsph_params]
 
 hybrid_blast = Hybrid_sim()
 hybrid_blast.initialize_pyro(solver,problem_name,param_file,other_commands)
-hybrid_blast.initialize_pysph_blast(dx=dx,xmin=0.0,xmax=1.00,ymin=0.0,ymax=1.0,gamma=1.4,kf=1.5,xcntr=0.5,ycntr=0.5,
+hybrid_blast.initialize_pysph_blast(dx=dx,xmin=-1.0,xmax=1.00,ymin=-1.0,ymax=1.0,gamma=1.4,kf=1.5,xcntr=0.0,ycntr=0.0,
                                     r_init=0.1,gaussian=False,DoDomain=False,mirror_x=False,mirror_y=False,adaptive=False,
                                     cfl=0.3,pfreq=10000,tf=0.025,dt=1e-4,scheme='gsph',scheme_params=params[2]) #
 
@@ -42,8 +43,8 @@ hybrid_blast.pysph_sim.particles[0].rho = np.where(hybrid_blast.pysph_sim.partic
 hybrid_blast.pysph_sim.particles[0].p = 0.4*hybrid_blast.pysph_sim.particles[0].rho*hybrid_blast.pysph_sim.particles[0].e
 
 # cylinder center
-x_cntr = 0.5
-y_cntr = 0.5
+x_cntr = 0.0
+y_cntr = 0.0
 r_init = 0.1
 EnergyDensity = 100.0
 Density = 4.0

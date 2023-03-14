@@ -270,6 +270,33 @@ class CustomApplication(Application):
         axs[3].set_title('Density')
         plt.show()
 
+    def plot_single(self,cbar_range=None,xlims=[0.,1.],ylims=[0.,1.]):
+         """ Plot single variable
+         Args:
+             self
+             cbar_range (double array): array of 8 values corresponding to max and min plotting values of p, u, v, and rho.
+         Returns:
+             None
+         """
+         x_vals = self.particles[0].x
+         y_vals = self.particles[0].y
+         rho_vals = self.particles[0].p
+         if (cbar_range):
+             [rho_min,rho_max] = cbar_range
+         else:
+             rho_min = min(rho_vals)
+             rho_max = max(rho_vals)
+         fig, axs = plt.subplots(1,1,sharex=True,sharey=True)
+         my_plot1 = axs.scatter(x_vals,y_vals,c=rho_vals,cmap="YlOrRd",s=10*self.dx,vmin=rho_min,vmax=rho_max)
+         ax_cb1 = fig.add_axes([1.0, 0.1, .02, 0.8])
+         cb1 = plt.colorbar(my_plot1,ax=axs,cax=ax_cb1)
+         axs.set_xlim(xlims)
+         axs.set_ylim(ylims)
+         axs.set_aspect('equal')
+         axs.set_title('Density')
+         plt.show()
+    
+
     def plot_square(self,cbar_range=None,xlims=[0.,1.],ylims=[0.,1.]):
         """ Scatter plot with four subplots corresponding to p, u, v, and rho in a vertical format. Useful for visualizing shocktube results.
         Args:
@@ -311,7 +338,7 @@ class CustomApplication(Application):
         ax_cb0 = fig.add_axes([1.0, 0.1, .02, 0.8])
         cb0 = plt.colorbar(my_plot0,ax=axs[0,0],cax=ax_cb0)
 
-        my_plot1 = axs[0,1].scatter(x_vals,y_vals,c=u_vals,cmap="PRGn",s=10*self.dx,vmin=u_min,vmax=u_max)
+        my_plot1 = axs[0,1].scatter(x_vals,y_vals,c=rho_vals,cmap="Blues",s=10*self.dx,vmin=rho_min,vmax=rho_max)
         ax_cb1 = fig.add_axes([1.1, 0.1, .02, 0.8])
         cb1 = plt.colorbar(my_plot1,ax=axs[0,1],cax=ax_cb1)
 
@@ -319,7 +346,7 @@ class CustomApplication(Application):
         ax_cb2 = fig.add_axes([1.2, 0.1, .02, 0.8])
         cb2 = plt.colorbar(my_plot2,ax=axs[1,0],cax=ax_cb2)
 
-        my_plot3 = axs[1,1].scatter(x_vals,y_vals,c=rho_vals,cmap="Blues",s=10*self.dx,vmin=rho_min,vmax=rho_max)
+        my_plot3 = axs[1,1].scatter(x_vals,y_vals,c=u_vals,cmap="PRGn",s=10*self.dx,vmin=u_min,vmax=u_max)
         ax_cb3 = fig.add_axes([1.3, 0.1, .02, 0.8])
         cb3 = plt.colorbar(my_plot3,ax=axs[1,1],cax=ax_cb3)
 
@@ -335,11 +362,11 @@ class CustomApplication(Application):
         axs[0,0].set_aspect('equal')
         axs[0,0].set_title('Pressure')
         axs[0,1].set_aspect('equal')
-        axs[0,1].set_title('X Velocity')
+        axs[0,1].set_title('Density')
         axs[1,0].set_aspect('equal')
         axs[1,0].set_title('Y Velocity')
         axs[1,1].set_aspect('equal')
-        axs[1,1].set_title('Density')
+        axs[1,1].set_title('X Velocity')
         plt.show()
 
     def plot_type_id(self,xlims,ylims):
@@ -356,7 +383,7 @@ class CustomApplication(Application):
         fig, axs = plt.subplots(1,1,sharex=True)
         my_plot0 = axs.scatter(x_vals, y_vals, c=id_vals, cmap='viridis', s=100*self.dx, vmin=0, vmax=2) # cmap='coolwarm', s=10*self.dx
         axs.set_aspect('equal')
-        axs.set_title('Particle Type')
+        #axs.set_title('Particle Type')
         axs.set_xlim(xlims)
         axs.set_ylim(ylims)
         #plt.colorbar(my_plot0)

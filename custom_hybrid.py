@@ -607,7 +607,7 @@ class Hybrid_sim():
 
         my_plot0 = axs.scatter(x_vals, y_vals, c=flag_map, s=10*self.injection_map.grid.dx, cmap='coolwarm')
         axs.set_aspect('equal')
-        axs.set_title('Injection Map')
+        #axs.set_title('Injection Map')
         axs.set_xlim(xlims)
         axs.set_ylim(ylims)
         plt.show()

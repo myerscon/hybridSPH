@@ -296,6 +296,30 @@ class CustomPyro(Pyro):
         axs.set_xlim(xlims)
         axs.set_ylim(ylims)
         plt.show()
+
+    def plot_single(self,cbar_range=None):
+        """ Plot single variable
+        Args:
+            self
+        Returns:
+            None
+        """
+        x_vals = self.sim.cc_data.grid.x
+        y_vals = self.sim.cc_data.grid.y
+        rho_vals = np.transpose(self.sim.cc_data.prim_array[:,:,3])
+        if (cbar_range):
+            [rho_min,rho_max] = cbar_range
+        else:
+            rho_min = min(rho_vals.ravel())
+            rho_max = max(rho_vals.ravel())
+        fig, axs = plt.subplots(1,1,sharex=True)
+        my_plot1 = axs.pcolormesh(x_vals, y_vals, rho_vals, cmap='YlOrRd', vmin=rho_min, vmax=rho_max)
+        ax_cb1 = fig.add_axes([0.85, 0.1, .02, 0.8])
+        cb1 = plt.colorbar(my_plot1,ax=axs,cax=ax_cb1)
+        axs.set_aspect('equal')
+        #axs.set_title('Pressure')
+        plt.show()
+
         
     def plot_2D_square(self,cbar_range=None):
         """ Plots primitive variables pressure, density, and x- and y- velocity
