@@ -8,15 +8,16 @@ file_name = 'hybrid_blast_01_25/' #
 solver = "compressible"
 problem_name = "sedov"
 param_file = "inputs.sedov"
-other_commands = ["driver.max_steps=2400","driver.tmax=0.05","vis.dovis=0",
-                  "mesh.nx=400","mesh.ny=400"] #
+other_commands = ["driver.max_steps=2400","driver.tmax=0.025","vis.dovis=0",
+                  "mesh.nx=50","mesh.ny=50", #
+                  "mesh.xmin=-1.0","mesh.xmax=1.0","mesh.ymin=-1.0","mesh.ymax=1.0"] 
 
 dx = 0.01 # 
 
 # PySPH Scheme Parameters
-adke_params = [1.0,1.0,0.5,0.5,1.0,0.8] # 
-mpm_params = [1.5,2.0,10.0,1.0,None,None] # 
-gsph_params = [1.5,None,0.1,0.5,1,2]
+adke_params = [1.0,1.0,0.5,0.5,1.0,0.8]
+mpm_params = [1.5,2.0,10.0,1.0,None,None]
+gsph_params = [1.5,None,0.25,0.5,1,2]
 params = [adke_params,mpm_params,gsph_params]
 
 hybrid_blast = Hybrid_sim()
