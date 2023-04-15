@@ -2,15 +2,14 @@ import numpy as np
 import time
 from custom_hybrid import Hybrid_sim
 
-filepath = 'saved_data/blast/'
+filepath = 'blast_parameters/'
 file_name = 'hybrid_blast_01_25/' #
 
 solver = "compressible"
 problem_name = "sedov"
 param_file = "inputs.sedov"
-other_commands = ["driver.max_steps=2400","driver.tmax=0.025","vis.dovis=0",
-                  "mesh.nx=25","mesh.ny=25",
-                  "mesh.xmin=-1.0","mesh.xmax=1.0","mesh.ymin=-1.0","mesh.ymax=1.0"] #
+other_commands = ["driver.max_steps=2400","driver.tmax=0.05","vis.dovis=0",
+                  "mesh.nx=400","mesh.ny=400"] #
 
 dx = 0.01 # 
 
@@ -24,7 +23,7 @@ hybrid_blast = Hybrid_sim()
 hybrid_blast.initialize_pyro(solver,problem_name,param_file,other_commands)
 hybrid_blast.initialize_pysph_blast(dx=dx,xmin=-1.0,xmax=1.00,ymin=-1.0,ymax=1.0,gamma=1.4,kf=1.5,xcntr=0.0,ycntr=0.0,
                                     r_init=0.1,gaussian=False,DoDomain=False,mirror_x=False,mirror_y=False,adaptive=False,
-                                    cfl=0.3,pfreq=10000,tf=0.025,dt=1e-4,scheme='gsph',scheme_params=params[2]) #
+                                    cfl=0.5,pfreq=10000,tf=0.025,dt=1e-4,scheme='gsph',scheme_params=params[2]) #
 
 hybrid_blast.initialize_particle_map(4) #
 hybrid_blast.pyro_sim.primitive_update()
@@ -38,31 +37,29 @@ active_width = 2 # 4
 boundary_width = 2 # 4
 thresholds = [24,24,24,24] # 
 
-hybrid_blast.pysph_sim.particles[0].e = np.where(hybrid_blast.pysph_sim.particles[0].p>0,400.0,1e-9)
-hybrid_blast.pysph_sim.particles[0].rho = np.where(hybrid_blast.pysph_sim.particles[0].p>0,4.0,1.0)
-hybrid_blast.pysph_sim.particles[0].p = 0.4*hybrid_blast.pysph_sim.particles[0].rho*hybrid_blast.pysph_sim.particles[0].e
+hybrid_blast.pysph_sim.particles[0].rho = np.where(hybrid_blast.pysph_sim.particles[0].p>0,1.001,1.0) 
+hybrid_blast.pysph_sim.particles[0].p = np.where(hybrid_blast.pysph_sim.particles[0].rho>1.0,1000,0.01) 
+hybrid_blast.pysph_sim.particles[0].e = np.where(hybrid_blast.pysph_sim.particles[0].rho>1.0,2.5e3,6.68e-2) # 
 
 # cylinder center
 x_cntr = 0.0
 y_cntr = 0.0
 r_init = 0.1
 EnergyDensity = 100.0
-Density = 4.0
+Density = 1.001 # 10.0
 
 # Make Values Uniform
 hybrid_blast.pyro_sim.sim.cc_data.data[:,:,1] = 1e-9 # 2.5e-5
-hybrid_blast.pyro_sim.sim.cc_data.prim_array[:,:,3] = 0 # 1e-5
+hybrid_blast.pyro_sim.sim.cc_data.prim_array[:,:,3] = 0.01 # 1e-5
 
 # Calculate Cell Volume
 unit_volume = hybrid_blast.pyro_sim.sim.cc_data.grid.dx * hybrid_blast.pyro_sim.sim.cc_data.grid.dy
 
 # Constant energy and density within volume, pressure calculated after
 dist = np.sqrt((hybrid_blast.pyro_sim.sim.cc_data.grid.x2d-x_cntr)**2+(hybrid_blast.pyro_sim.sim.cc_data.grid.y2d-y_cntr)**2)
-hybrid_blast.pyro_sim.sim.cc_data.data[:,:,1] = np.where(dist<r_init,EnergyDensity,1e-9)
 hybrid_blast.pyro_sim.sim.cc_data.data[:,:,0] = np.where(dist<r_init,Density,1.0)
 hybrid_blast.pyro_sim.primitive_update()
-# temp
-hybrid_blast.pyro_sim.sim.cc_data.prim_array[:,:,3] = 0.4 * hybrid_blast.pyro_sim.sim.cc_data.data[:,:,1] * hybrid_blast.pyro_sim.sim.cc_data.data[:,:,0]
+hybrid_blast.pyro_sim.sim.cc_data.prim_array[:,:,3] = np.where(dist<r_init,1000,0.01) # 1000
 hybrid_blast.pyro_sim.conservative_update()
 
 start = time.time()
