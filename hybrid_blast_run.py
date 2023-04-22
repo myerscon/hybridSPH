@@ -2,7 +2,7 @@ import numpy as np
 import time
 from custom_hybrid import Hybrid_sim
 
-filepath = 'blast_parameters/'
+filepath = 'saved_data/blast/'
 file_name = 'hybrid_blast_01_25/' #
 
 solver = "compressible"

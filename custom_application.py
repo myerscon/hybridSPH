@@ -130,7 +130,7 @@ class CustomApplication(Application):
     def create_domain(self):
         if (self.DoDomain):
             return DomainManager(
-                xmin=self.xmin, xmax=self.xmax, ymin=self.ymin, ymax=self.ymax,
+                xmin=self.xmin, xmax=self.xmax, ymin=self.ymin, ymax=self.ymax,n_layers=4, # n_layers set to 4 for riemann
                 mirror_in_x=self.mirror_in_x, mirror_in_y=self.mirror_in_y,periodic_in_x=False, periodic_in_y=False)
                 # periodic boundary conditions don't seem to work...
 

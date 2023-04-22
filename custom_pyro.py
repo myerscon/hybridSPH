@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+plt.rc('font',family='Verdana') # Changes plotting font # family='Times New Roman'
 from scipy.ndimage.filters import uniform_filter
 from pyro import Pyro
 
@@ -179,11 +180,17 @@ class CustomPyro(Pyro):
         cb2 = plt.colorbar(my_plot2,ax=axs[2],cax=ax_cb2)
 
         my_plot3 = axs[3].pcolormesh(x_vals, y_vals, rho_vals, cmap='Blues', vmin=rho_min, vmax=rho_max)
-        ax_cb3 = fig.add_axes([1.3, 0.1, .02, 0.8])
+        ax_cb3 = fig.add_axes([1.32, 0.1, .02, 0.8]) # [1.3, 0.1, .02, 0.8]
         cb3 = plt.colorbar(my_plot3,ax=axs[3],cax=ax_cb3)
 
         axs[0].set_xlim(xlims)
         axs[0].set_ylim(ylims)
+        axs[1].set_xlim(xlims)
+        axs[1].set_ylim(ylims)
+        axs[2].set_xlim(xlims)
+        axs[2].set_ylim(ylims)
+        axs[3].set_xlim(xlims)
+        axs[3].set_ylim(ylims)
 
         axs[0].set_aspect('equal')
         axs[0].set_title('Pressure')
@@ -259,7 +266,7 @@ class CustomPyro(Pyro):
         axs[3].set_title('Density Gradient')
         plt.show()
 
-    def plot_2D_mesh_flag(self,cbar_range=None):
+    def plot_2D_mesh_flag(self,cbar_range=None,xlims=[0.,1.],ylims=[0.,0.05]):
         """ Plots gradient flag
         Args:
             self
@@ -275,6 +282,8 @@ class CustomPyro(Pyro):
         my_plot0 = axs.pcolormesh(np.transpose(flag), cmap='coolwarm')
         axs.set_aspect('equal')
         axs.set_title('Gradient Flag')
+        axs.set_xlim(xlims)
+        axs.set_ylim(ylims)
         plt.show()
 
     def plot_2D_scatter_flag(self,cbar_range=None,xlims=[0.,1.],ylims=[0.,0.05]):
@@ -290,14 +299,14 @@ class CustomPyro(Pyro):
 
         fig, axs = plt.subplots(1,1,sharex=True)
 
-        my_plot0 = axs.scatter(x_vals, y_vals, c=flag, cmap='coolwarm')
+        my_plot0 = axs.scatter(x_vals, y_vals, c=flag, cmap='coolwarm', marker=",", s=100)
         axs.set_aspect('equal')
-        axs.set_title('Gradient Flag')
+        #axs.set_title('Gradient Flag')
         axs.set_xlim(xlims)
         axs.set_ylim(ylims)
         plt.show()
 
-    def plot_single(self,cbar_range=None):
+    def plot_single(self,cbar_range=None,xlims=[0.,1.],ylims=[0.,1.]):
         """ Plot single variable
         Args:
             self
@@ -317,11 +326,13 @@ class CustomPyro(Pyro):
         ax_cb1 = fig.add_axes([0.85, 0.1, .02, 0.8])
         cb1 = plt.colorbar(my_plot1,ax=axs,cax=ax_cb1)
         axs.set_aspect('equal')
+        axs.set_xlim(xlims)
+        axs.set_ylim(ylims)
         #axs.set_title('Pressure')
         plt.show()
 
         
-    def plot_2D_square(self,cbar_range=None):
+    def plot_2D_square(self,cbar_range=None,xlims=[0.,1.],ylims=[0.,0.05]):
         """ Plots primitive variables pressure, density, and x- and y- velocity
         Args:
             self
@@ -373,7 +384,6 @@ class CustomPyro(Pyro):
         ax_cb3 = fig.add_axes([1.3, 0.1, .02, 0.8])
         cb3 = plt.colorbar(my_plot3,ax=axs[0,1],cax=ax_cb3)
 
-        axs[0,0].set_xlim([0.,1.])
 
         axs[0,0].set_aspect('equal')
         axs[0,0].set_title('Pressure')
@@ -383,6 +393,8 @@ class CustomPyro(Pyro):
         axs[1,1].set_title('Y Velocity')
         axs[0,1].set_aspect('equal')
         axs[0,1].set_title('Density')
+        axs[0,0].set_xlim(xlims)
+        axs[0,0].set_xlim(ylims)
         plt.show()
         
     def plot_gradients_2D_square(self,cbar_range=None):

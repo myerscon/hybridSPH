@@ -6,6 +6,7 @@ from custom_pyro import CustomPyro
 from custom_pysph_shocktube import CustomShockTube2D
 from custom_pysph_sedov import CustomSedov
 from custom_pysph_blast import CustomBlast
+from custom_pysph_riemann import CustomRiemann
 from mesh.patch import Grid2d, CellCenterData2d
 from mesh.boundary import BC
 
@@ -58,7 +59,7 @@ class Hybrid_sim():
         self.pysph_sim.particles[0].add_property(name='y1',type='double',default=0.0)
 
     def initialize_pysph_blast(self,dx,xmin,xmax,ymin,ymax,gamma,kf,DoDomain,mirror_x,mirror_y,xcntr,ycntr,r_init,gaussian,adaptive,cfl,pfreq,tf,dt,scheme,scheme_params):
-        self.pysph_sim = CustomSedov(dx,xmin,xmax,ymin,ymax,gamma,kf,DoDomain,mirror_x,mirror_y,xcntr,ycntr,r_init,gaussian,adaptive,cfl,pfreq,tf,dt,scheme,scheme_params)
+        self.pysph_sim = CustomBlast(dx,xmin,xmax,ymin,ymax,gamma,kf,DoDomain,mirror_x,mirror_y,xcntr,ycntr,r_init,gaussian,adaptive,cfl,pfreq,tf,dt,scheme,scheme_params)
         self.pysph_sim.setup()
         self.pysph_sim.particles[0].add_property(name='particle_type_id',type='double',default=2.0)
         self.pysph_sim.particles[0].add_property(name='id',type='int',default=-1)
@@ -72,6 +73,32 @@ class Hybrid_sim():
         self.pysph_sim.particles[0].add_property(name='v1',type='double',default=0.0)
         self.pysph_sim.particles[0].add_property(name='x1',type='double',default=0.0)
         self.pysph_sim.particles[0].add_property(name='y1',type='double',default=0.0)
+
+    def initialize_pysph_riemann(self,dx,xmin,xmax,ymin,ymax,gamma,kf,DoDomain,mirror_x,mirror_y,xcntr,ycntr,r_init,gaussian,adaptive,cfl,pfreq,tf,dt,scheme,scheme_params):
+        self.pysph_sim = CustomRiemann(dx,xmin,xmax,ymin,ymax,gamma,kf,DoDomain,mirror_x,mirror_y,xcntr,ycntr,r_init,gaussian,adaptive,cfl,pfreq,tf,dt,scheme,scheme_params)
+        self.pysph_sim.setup()
+        self.pysph_sim.particles[0].add_property(name='particle_type_id',type='double',default=2.0)
+        self.pysph_sim.particles[0].add_property(name='id',type='int',default=-1)
+        self.pysph_sim.particles[0].add_property(name='dt_cfl',type='double',default=0.0)
+        self.pysph_sim.particles[0].add_property(name='e1',type='double',default=0.0)
+        self.pysph_sim.particles[0].add_property(name='h1',type='double',default=0.0)
+        self.pysph_sim.particles[0].add_property(name='m1',type='double',default=0.0)
+        self.pysph_sim.particles[0].add_property(name='p1',type='double',default=0.0)
+        self.pysph_sim.particles[0].add_property(name='rho1',type='double',default=0.0)
+        self.pysph_sim.particles[0].add_property(name='u1',type='double',default=0.0)
+        self.pysph_sim.particles[0].add_property(name='v1',type='double',default=0.0)
+        self.pysph_sim.particles[0].add_property(name='x1',type='double',default=0.0)
+        self.pysph_sim.particles[0].add_property(name='y1',type='double',default=0.0)
+        # Riemann specific
+        #self.pysph_sim.particles[0].add_property(name='dwdh',type='double',default=0.0)
+        #self.pysph_sim.particles[0].add_property(name='converged',type='int',default=0)
+        #self.pysph_sim.particles[0].add_property(name='grhox',type='double',default=0.0)
+        #self.pysph_sim.particles[0].add_property(name='grhoy',type='double',default=0.0)
+        #self.pysph_sim.particles[0].add_property(name='grhoz',type='double',default=0.0)
+        #self.pysph_sim.particles[0].add_property(name='ah',type='double',default=0.0)
+        #self.pysph_sim.particles[0].add_property(name='arho',type='double',default=0.0)
+        #self.pysph_sim.particles[0].add_property(name='omega',type='double',default=0.0)
+        #self.pysph_sim.particles[0].add_property(name='div',type='double',default=0.0)
         
     def initialize_particle_map(self,shrink_factor):
         """ Initializes the SPH particle population map based on the underlying Pyro grid and shrink factor.
@@ -103,12 +130,41 @@ class Hybrid_sim():
         self.injection_map.register_var("gradient_flag_mirror",bc)
         self.injection_map.register_var("gradient_flag_old",bc)
 
-        # Additional Data for PySPH Wall Boundaries:
-        self.injection_map.set_aux("x-density",np.zeros(len(self.injection_map.grid.x)))
-        self.injection_map.set_aux("x-pressure",np.zeros(len(self.injection_map.grid.x)))
-        self.injection_map.set_aux("x-energy",np.zeros(len(self.injection_map.grid.x)))
-        self.injection_map.set_aux("x-velocity",np.zeros(len(self.injection_map.grid.x)))
-        #self.injection_map.set_aux("y-velocity",np.zeros(len(self.injection_map.grid.x)))
+        # Additional Data for PySPH Wall Boundaries (shocktube):
+        wall_length_shocktube = len(self.injection_map.grid.x)
+        self.injection_map.set_aux("x-density",np.zeros(wall_length_shocktube))
+        self.injection_map.set_aux("x-pressure",np.zeros(wall_length_shocktube))
+        self.injection_map.set_aux("x-energy",np.zeros(wall_length_shocktube))
+        self.injection_map.set_aux("x-velocity",np.zeros(wall_length_shocktube))
+        #self.injection_map.set_aux("y-velocity",np.zeros(wall_length_shocktube))
+
+        # Data for PySPH 4-Wall Boundaries (Riemann):
+        wall_length = 2*len(self.injection_map.grid.x)+2*len(self.injection_map.grid.y)
+        self.injection_map.set_aux("wall-density",np.zeros(wall_length))
+        self.injection_map.set_aux("wall-pressure",np.zeros(wall_length))
+        self.injection_map.set_aux("wall-energy",np.zeros(wall_length))
+        self.injection_map.set_aux("wall-x-velocity",np.zeros(wall_length))
+        self.injection_map.set_aux("wall-y-velocity",np.zeros(wall_length))
+        #self.injection_map.set_aux("x-density-left",np.zeros(len(self.injection_map.grid.x)))
+        #self.injection_map.set_aux("x-pressure-left",np.zeros(len(self.injection_map.grid.x)))
+        #self.injection_map.set_aux("x-energy-left",np.zeros(len(self.injection_map.grid.x)))
+        #self.injection_map.set_aux("x-u-left",np.zeros(len(self.injection_map.grid.x)))
+        #self.injection_map.set_aux("x-v-left",np.zeros(len(self.injection_map.grid.x)))
+        #self.injection_map.set_aux("x-density-right",np.zeros(len(self.injection_map.grid.x)))
+        #self.injection_map.set_aux("x-pressure-right",np.zeros(len(self.injection_map.grid.x)))
+        #self.injection_map.set_aux("x-energy-right",np.zeros(len(self.injection_map.grid.x)))
+        #self.injection_map.set_aux("x-u-right",np.zeros(len(self.injection_map.grid.x)))
+        #self.injection_map.set_aux("x-v-right",np.zeros(len(self.injection_map.grid.x)))
+        #self.injection_map.set_aux("y-density-left",np.zeros(len(self.injection_map.grid.x)))
+        #self.injection_map.set_aux("y-pressure-left",np.zeros(len(self.injection_map.grid.x)))
+        #self.injection_map.set_aux("y-energy-left",np.zeros(len(self.injection_map.grid.x)))
+        #self.injection_map.set_aux("y-u-left",np.zeros(len(self.injection_map.grid.x)))
+        #self.injection_map.set_aux("y-v-left",np.zeros(len(self.injection_map.grid.x)))
+        #self.injection_map.set_aux("y-density-right",np.zeros(len(self.injection_map.grid.x)))
+        #self.injection_map.set_aux("y-pressure-right",np.zeros(len(self.injection_map.grid.x)))
+        #self.injection_map.set_aux("y-energy-right",np.zeros(len(self.injection_map.grid.x)))
+        #self.injection_map.set_aux("y-u-right",np.zeros(len(self.injection_map.grid.x)))
+        #self.injection_map.set_aux("y-v-right",np.zeros(len(self.injection_map.grid.x)))
 
         self.injection_map.create()
         self.injection_map.data[:,:,0] = 1.0
@@ -370,6 +426,7 @@ class Hybrid_sim():
 
     ##### WALL #####
 
+    # Rountines for quasi-1D walls (shocktube)
     def set_x_wall_values(self):
         """ Sets x_wall_boundary values for shocktube problems
         Note: Call after particle_sort()
@@ -418,6 +475,190 @@ class Hybrid_sim():
         self.pysph_sim.particles[0].e[boundary_ids] = self.injection_map.aux['x-energy'][x_bins]
         self.pysph_sim.particles[0].u[boundary_ids] = self.injection_map.aux['x-velocity'][x_bins]
         #self.pysph_sim.particles[0].v[boundary_ids] = self.injection_map.aux['y-velocity'][x_bins]
+
+    # Routines for 4-Walls (Riemann)
+
+    def set_wall_values(self,x_bounds=[0.05,0.95],y_bounds=[0.05,0.95]):
+        """ Sets wall values for 4-walled problems (Riemann)
+        Args:
+            self
+            x_bounds (doubles): left and right x-domain boundaries
+            x_bounds (doubles): left and right x-domain boundaries
+        Returns
+            None
+        """
+        physical_ids = np.extract(self.pysph_sim.particles[0].particle_type_id < 1.1, # == 2.0
+                            self.pysph_sim.particles[0].id)
+        inside_ids = np.extract(self.pysph_sim.particles[0].particle_type_id > 1.1, # == 1.0
+                            self.pysph_sim.particles[0].id)
+        real_ids = np.concatenate((physical_ids,inside_ids))
+
+        left_ids = np.extract(self.pysph_sim.particles[0].x[real_ids]<x_bounds[0],self.pysph_sim.particles[0].id)
+        right_ids = np.extract(self.pysph_sim.particles[0].x[real_ids]>x_bounds[1],self.pysph_sim.particles[0].id)
+        bottom_ids = np.extract(self.pysph_sim.particles[0].y[real_ids]<y_bounds[0],self.pysph_sim.particles[0].id)
+        top_ids = np.extract(self.pysph_sim.particles[0].y[real_ids]>y_bounds[1],self.pysph_sim.particles[0].id)
+
+        wall_len = len(self.injection_map.aux['wall-density'])
+        len_y = len(self.injection_map.grid.y) - 1 #
+        len_x = len(self.injection_map.grid.x) - 1 #
+
+        w_left = np.histogram(self.pysph_sim.particles[0].y[left_ids],self.injection_map.grid.y)[0]
+        w_rho_left = np.histogram(self.pysph_sim.particles[0].y[left_ids],self.injection_map.grid.y,
+                        weights=self.pysph_sim.particles[0].rho[left_ids])[0]
+        w_p_left = np.histogram(self.pysph_sim.particles[0].y[left_ids],self.injection_map.grid.y,
+                        weights=self.pysph_sim.particles[0].p[left_ids])[0]
+        w_e_left = np.histogram(self.pysph_sim.particles[0].y[left_ids],self.injection_map.grid.y,
+                        weights=self.pysph_sim.particles[0].e[left_ids])[0]
+        w_u_left = np.histogram(self.pysph_sim.particles[0].y[left_ids],self.injection_map.grid.y,
+                        weights=self.pysph_sim.particles[0].u[left_ids])[0]
+        w_v_left = np.histogram(self.pysph_sim.particles[0].y[left_ids],self.injection_map.grid.y,
+                        weights=self.pysph_sim.particles[0].v[left_ids])[0]
+        inv_w_left = np.where(w_left>0,w_left,1.0)
+        self.injection_map.aux['wall-density'][:len_y]=w_rho_left/inv_w_left
+        self.injection_map.aux['wall-pressure'][:len_y]=w_p_left/inv_w_left
+        self.injection_map.aux['wall-energy'][:len_y]=w_e_left/inv_w_left
+        self.injection_map.aux['wall-x-velocity'][:len_y]=w_u_left/inv_w_left
+        self.injection_map.aux['wall-y-velocity'][:len_y]=w_v_left/inv_w_left
+        
+        w_right = np.histogram(self.pysph_sim.particles[0].y[right_ids],self.injection_map.grid.y)[0]
+        w_rho_right = np.histogram(self.pysph_sim.particles[0].y[right_ids],self.injection_map.grid.y,
+                        weights=self.pysph_sim.particles[0].rho[right_ids])[0]
+        w_p_right = np.histogram(self.pysph_sim.particles[0].y[right_ids],self.injection_map.grid.y,
+                        weights=self.pysph_sim.particles[0].p[right_ids])[0]
+        w_e_right = np.histogram(self.pysph_sim.particles[0].y[right_ids],self.injection_map.grid.y,
+                        weights=self.pysph_sim.particles[0].e[right_ids])[0]
+        w_u_right = np.histogram(self.pysph_sim.particles[0].y[right_ids],self.injection_map.grid.y,
+                        weights=self.pysph_sim.particles[0].u[right_ids])[0]
+        w_v_right = np.histogram(self.pysph_sim.particles[0].y[right_ids],self.injection_map.grid.y,
+                        weights=self.pysph_sim.particles[0].v[right_ids])[0]
+        inv_w_right = np.where(w_right>0,w_right,1.0)
+        self.injection_map.aux['wall-density'][len_y:2*len_y]=w_rho_right/inv_w_right
+        self.injection_map.aux['wall-pressure'][len_y:2*len_y]=w_p_right/inv_w_right
+        self.injection_map.aux['wall-energy'][len_y:2*len_y]=w_e_right/inv_w_right
+        self.injection_map.aux['wall-x-velocity'][len_y:2*len_y]=w_u_right/inv_w_right
+        self.injection_map.aux['wall-y-velocity'][len_y:2*len_y]=w_v_right/inv_w_right
+
+        w_bottom = np.histogram(self.pysph_sim.particles[0].x[bottom_ids],self.injection_map.grid.x)[0]
+        w_rho_bottom = np.histogram(self.pysph_sim.particles[0].x[bottom_ids],self.injection_map.grid.x,
+                        weights=self.pysph_sim.particles[0].rho[bottom_ids])[0]
+        w_p_bottom = np.histogram(self.pysph_sim.particles[0].x[bottom_ids],self.injection_map.grid.x,
+                        weights=self.pysph_sim.particles[0].p[bottom_ids])[0]
+        w_e_bottom = np.histogram(self.pysph_sim.particles[0].x[bottom_ids],self.injection_map.grid.x,
+                        weights=self.pysph_sim.particles[0].e[bottom_ids])[0]
+        w_u_bottom = np.histogram(self.pysph_sim.particles[0].x[bottom_ids],self.injection_map.grid.x,
+                        weights=self.pysph_sim.particles[0].u[bottom_ids])[0]
+        w_v_bottom = np.histogram(self.pysph_sim.particles[0].x[bottom_ids],self.injection_map.grid.x,
+                        weights=self.pysph_sim.particles[0].v[bottom_ids])[0]
+        inv_w_bottom = np.where(w_right>0,w_right,1.0)
+        self.injection_map.aux['wall-density'][2*len_y:(2*len_y+len_x)]=w_rho_bottom/inv_w_bottom
+        self.injection_map.aux['wall-pressure'][2*len_y:(2*len_y+len_x)]=w_p_bottom/inv_w_bottom
+        self.injection_map.aux['wall-energy'][2*len_y:(2*len_y+len_x)]=w_e_bottom/inv_w_bottom
+        self.injection_map.aux['wall-x-velocity'][2*len_y:(2*len_y+len_x)]=w_u_bottom/inv_w_bottom
+        self.injection_map.aux['wall-y-velocity'][2*len_y:(2*len_y+len_x)]=w_v_bottom/inv_w_bottom
+
+        w_top = np.histogram(self.pysph_sim.particles[0].x[top_ids],self.injection_map.grid.x)[0]
+        w_rho_top = np.histogram(self.pysph_sim.particles[0].x[top_ids],self.injection_map.grid.x,
+                        weights=self.pysph_sim.particles[0].rho[top_ids])[0]
+        w_p_top = np.histogram(self.pysph_sim.particles[0].x[top_ids],self.injection_map.grid.x,
+                        weights=self.pysph_sim.particles[0].p[top_ids])[0]
+        w_e_top = np.histogram(self.pysph_sim.particles[0].x[top_ids],self.injection_map.grid.x,
+                        weights=self.pysph_sim.particles[0].e[top_ids])[0]
+        w_u_top = np.histogram(self.pysph_sim.particles[0].x[top_ids],self.injection_map.grid.x,
+                        weights=self.pysph_sim.particles[0].u[top_ids])[0]
+        w_v_top = np.histogram(self.pysph_sim.particles[0].x[top_ids],self.injection_map.grid.x,
+                        weights=self.pysph_sim.particles[0].v[top_ids])[0]
+        inv_w_top = np.where(w_right>0,w_right,1.0)
+        self.injection_map.aux['wall-density'][-len_x:]=w_rho_top/inv_w_top
+        self.injection_map.aux['wall-pressure'][-len_x:]=w_p_top/inv_w_top
+        self.injection_map.aux['wall-energy'][-len_x:]=w_e_top/inv_w_top
+        self.injection_map.aux['wall-x-velocity'][-len_x:]=w_u_top/inv_w_top
+        self.injection_map.aux['wall-y-velocity'][-len_x:]=w_v_top/inv_w_top
+
+        # Corner blending (alternative: corner splitting)
+
+        variable_list = ['wall-density','wall-pressure','wall-energy','wall-x-velocity','wall-y-velocity']
+        for wall_variable in variable_list:
+            lower_left = (self.injection_map.aux[wall_variable][0]+self.injection_map.aux[wall_variable][2*len_y])/2
+            self.injection_map.aux[wall_variable][0] = lower_left
+            self.injection_map.aux[wall_variable][2*len_y] = lower_left
+            upper_left = (self.injection_map.aux[wall_variable][len_y-1]+self.injection_map.aux[wall_variable][wall_len-len_x])/2
+            self.injection_map.aux[wall_variable][len_y-1] = upper_left
+            self.injection_map.aux[wall_variable][wall_len-len_x] = upper_left
+            lower_right = (self.injection_map.aux[wall_variable][len_y]+self.injection_map.aux[wall_variable][wall_len-len_x-1])/2
+            self.injection_map.aux[wall_variable][len_y] = lower_right
+            self.injection_map.aux[wall_variable][wall_len-len_x-1] = lower_right
+            upper_right = (self.injection_map.aux[wall_variable][2*len_y-1]+self.injection_map.aux[wall_variable][wall_len-1])/2
+            self.injection_map.aux[wall_variable][2*len_y-1] = upper_right
+            self.injection_map.aux[wall_variable][wall_len-1] = upper_right
+
+    def get_wall_values(self,x_bounds=[0.05,0.95],y_bounds=[0.05,0.95]):
+        """ Retrieves wall_boundary values for particles with type id of 1.1 (wall)
+        Args:
+            self
+            x_bounds (doubles): left and right x-domain boundaries
+            x_bounds (doubles): left and right x-domain boundaries
+        Returns
+            None
+        """
+        wall_len = len(self.injection_map.aux['wall-density'])
+        len_y = len(self.injection_map.grid.y)
+        len_x = len(self.injection_map.grid.x)
+
+        wall_ids = np.extract(self.pysph_sim.particles[0].particle_type_id == 1.1,self.pysph_sim.particles[0].id)
+        # Corner particles will be counted twice. If corners are blended both values are identical
+        left_ids = np.extract(self.pysph_sim.particles[0].x[wall_ids]<x_bounds[0],self.pysph_sim.particles[0].id)
+        right_ids = np.extract(self.pysph_sim.particles[0].x[wall_ids]>x_bounds[1],self.pysph_sim.particles[0].id)
+        bottom_ids = np.extract(self.pysph_sim.particles[0].y[wall_ids]<y_bounds[0],self.pysph_sim.particles[0].id)
+        top_ids = np.extract(self.pysph_sim.particles[0].y[wall_ids]>y_bounds[1],self.pysph_sim.particles[0].id)
+
+        left_bins = np.digitize(self.pysph_sim.particles[0].y[left_ids],self.injection_map.grid.y)
+        right_bins = np.digitize(self.pysph_sim.particles[0].y[right_ids],self.injection_map.grid.y)
+        bottom_bins = np.digitize(self.pysph_sim.particles[0].x[bottom_ids],self.injection_map.grid.x)
+        top_bins = np.digitize(self.pysph_sim.particles[0].x[top_ids],self.injection_map.grid.x)
+        
+        left_density = self.injection_map.aux['wall-density'][:len_y]
+        left_pressure = self.injection_map.aux['wall-pressure'][:len_y]
+        left_energy = self.injection_map.aux['wall-energy'][:len_y]
+        left_x_velocity = self.injection_map.aux['wall-x-velocity'][:len_y]
+        left_y_velocity = self.injection_map.aux['wall-y-velocity'][:len_y]
+        self.pysph_sim.particles[0].rho[left_ids] = left_density[left_bins]
+        self.pysph_sim.particles[0].p[left_ids] = left_pressure[left_bins]
+        self.pysph_sim.particles[0].e[left_ids] = left_energy[left_bins]
+        self.pysph_sim.particles[0].u[left_ids] = left_x_velocity[left_bins]
+        self.pysph_sim.particles[0].v[left_ids] = left_y_velocity[left_bins]
+
+        right_density = self.injection_map.aux['wall-density'][len_y:2*len_y]
+        right_pressure = self.injection_map.aux['wall-pressure'][len_y:2*len_y]
+        right_energy = self.injection_map.aux['wall-energy'][len_y:2*len_y]
+        right_x_velocity = self.injection_map.aux['wall-x-velocity'][len_y:2*len_y]
+        right_y_velocity = self.injection_map.aux['wall-y-velocity'][len_y:2*len_y]
+        self.pysph_sim.particles[0].rho[right_ids] = right_density[right_bins]
+        self.pysph_sim.particles[0].p[right_ids] = right_pressure[right_bins]
+        self.pysph_sim.particles[0].e[right_ids] = right_energy[right_bins]
+        self.pysph_sim.particles[0].u[right_ids] = right_x_velocity[right_bins]
+        self.pysph_sim.particles[0].v[right_ids] = right_y_velocity[right_bins]
+
+        bottom_density = self.injection_map.aux['wall-density'][2*len_y:(2*len_y+len_x)]
+        bottom_pressure = self.injection_map.aux['wall-pressure'][2*len_y:(2*len_y+len_x)]
+        bottom_energy = self.injection_map.aux['wall-energy'][2*len_y:(2*len_y+len_x)]
+        bottom_x_velocity = self.injection_map.aux['wall-x-velocity'][2*len_y:(2*len_y+len_x)]
+        bottom_y_velocity = self.injection_map.aux['wall-y-velocity'][2*len_y:(2*len_y+len_x)]
+        self.pysph_sim.particles[0].rho[bottom_ids] = bottom_density[bottom_bins]
+        self.pysph_sim.particles[0].p[bottom_ids] = bottom_pressure[bottom_bins]
+        self.pysph_sim.particles[0].e[bottom_ids] = bottom_energy[bottom_bins]
+        self.pysph_sim.particles[0].u[bottom_ids] = bottom_x_velocity[bottom_bins]
+        self.pysph_sim.particles[0].v[bottom_ids] = bottom_y_velocity[bottom_bins]
+
+        top_density = self.injection_map.aux['wall-density'][-len_x:]
+        top_pressure = self.injection_map.aux['wall-pressure'][-len_x:]
+        top_energy = self.injection_map.aux['wall-energy'][-len_x:]
+        top_x_velocity = self.injection_map.aux['wall-x-velocity'][-len_x:]
+        top_y_velocity = self.injection_map.aux['wall-y-velocity'][-len_x:]
+        self.pysph_sim.particles[0].rho[top_ids] = top_density[top_bins]
+        self.pysph_sim.particles[0].p[top_ids] = top_pressure[top_bins]
+        self.pysph_sim.particles[0].e[top_ids] = top_energy[top_bins]
+        self.pysph_sim.particles[0].u[top_ids] = top_x_velocity[top_bins]
+        self.pysph_sim.particles[0].v[top_ids] = top_y_velocity[top_bins]
 
     ###
     ### TRANSFER FUNCTIONS
@@ -605,7 +846,7 @@ class Hybrid_sim():
 
         fig, axs = plt.subplots(1,1,sharex=True)
 
-        my_plot0 = axs.scatter(x_vals, y_vals, c=flag_map, s=10*self.injection_map.grid.dx, cmap='coolwarm')
+        my_plot0 = axs.scatter(x_vals, y_vals, c=flag_map, s=100*self.injection_map.grid.dx, cmap='coolwarm')
         axs.set_aspect('equal')
         #axs.set_title('Injection Map')
         axs.set_xlim(xlims)
