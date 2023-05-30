@@ -301,7 +301,7 @@ class CustomPyro(Pyro):
 
         my_plot0 = axs.scatter(x_vals, y_vals, c=flag, cmap='coolwarm', marker=",", s=100)
         axs.set_aspect('equal')
-        #axs.set_title('Gradient Flag')
+        axs.set_title('Gradient Flag')
         axs.set_xlim(xlims)
         axs.set_ylim(ylims)
         plt.show()
@@ -384,6 +384,14 @@ class CustomPyro(Pyro):
         ax_cb3 = fig.add_axes([1.3, 0.1, .02, 0.8])
         cb3 = plt.colorbar(my_plot3,ax=axs[0,1],cax=ax_cb3)
 
+        axs[0,0].set_xlim(xlims)
+        axs[0,0].set_ylim(ylims)
+        axs[0,1].set_xlim(xlims)
+        axs[0,1].set_ylim(ylims)
+        axs[1,0].set_xlim(xlims)
+        axs[1,0].set_ylim(ylims)
+        axs[1,1].set_xlim(xlims)
+        axs[1,1].set_ylim(ylims)
 
         axs[0,0].set_aspect('equal')
         axs[0,0].set_title('Pressure')

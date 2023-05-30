@@ -9,7 +9,7 @@ max_steps = 10000
 
 adke_params = [1.0,1.0,0.5,0.5,1.0,0.8]
 mpm_params = [1.5,2.0,10.0,1.0,None,None]
-gsph_params = [1.5,None,0.25,0.5,1,2]
+gsph_params = [1.5,None,0.25,0.5,1,2] #
 params = [adke_params,mpm_params,gsph_params]
 
 pysph_riemann = Hybrid_sim()

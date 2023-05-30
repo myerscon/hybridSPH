@@ -7,6 +7,7 @@ from custom_pysph_shocktube import CustomShockTube2D
 from custom_pysph_sedov import CustomSedov
 from custom_pysph_blast import CustomBlast
 from custom_pysph_riemann import CustomRiemann
+from custom_pysph_det import CustomDet
 from mesh.patch import Grid2d, CellCenterData2d
 from mesh.boundary import BC
 
@@ -89,16 +90,22 @@ class Hybrid_sim():
         self.pysph_sim.particles[0].add_property(name='v1',type='double',default=0.0)
         self.pysph_sim.particles[0].add_property(name='x1',type='double',default=0.0)
         self.pysph_sim.particles[0].add_property(name='y1',type='double',default=0.0)
-        # Riemann specific
-        #self.pysph_sim.particles[0].add_property(name='dwdh',type='double',default=0.0)
-        #self.pysph_sim.particles[0].add_property(name='converged',type='int',default=0)
-        #self.pysph_sim.particles[0].add_property(name='grhox',type='double',default=0.0)
-        #self.pysph_sim.particles[0].add_property(name='grhoy',type='double',default=0.0)
-        #self.pysph_sim.particles[0].add_property(name='grhoz',type='double',default=0.0)
-        #self.pysph_sim.particles[0].add_property(name='ah',type='double',default=0.0)
-        #self.pysph_sim.particles[0].add_property(name='arho',type='double',default=0.0)
-        #self.pysph_sim.particles[0].add_property(name='omega',type='double',default=0.0)
-        #self.pysph_sim.particles[0].add_property(name='div',type='double',default=0.0)
+
+    def initialize_pysph_detonation(self,dx,xmin,xmax,ymin,ymax,gamma,kf,DoDomain,mirror_x,mirror_y,xcntr,ycntr,r_init,gaussian,adaptive,cfl,pfreq,tf,dt,scheme,scheme_params):
+        self.pysph_sim = CustomDet(dx,xmin,xmax,ymin,ymax,gamma,kf,DoDomain,mirror_x,mirror_y,xcntr,ycntr,r_init,gaussian,adaptive,cfl,pfreq,tf,dt,scheme,scheme_params)
+        self.pysph_sim.setup()
+        self.pysph_sim.particles[0].add_property(name='particle_type_id',type='double',default=2.0)
+        self.pysph_sim.particles[0].add_property(name='id',type='int',default=-1)
+        self.pysph_sim.particles[0].add_property(name='dt_cfl',type='double',default=0.0)
+        self.pysph_sim.particles[0].add_property(name='e1',type='double',default=0.0)
+        self.pysph_sim.particles[0].add_property(name='h1',type='double',default=0.0)
+        self.pysph_sim.particles[0].add_property(name='m1',type='double',default=0.0)
+        self.pysph_sim.particles[0].add_property(name='p1',type='double',default=0.0)
+        self.pysph_sim.particles[0].add_property(name='rho1',type='double',default=0.0)
+        self.pysph_sim.particles[0].add_property(name='u1',type='double',default=0.0)
+        self.pysph_sim.particles[0].add_property(name='v1',type='double',default=0.0)
+        self.pysph_sim.particles[0].add_property(name='x1',type='double',default=0.0)
+        self.pysph_sim.particles[0].add_property(name='y1',type='double',default=0.0)
         
     def initialize_particle_map(self,shrink_factor):
         """ Initializes the SPH particle population map based on the underlying Pyro grid and shrink factor.
@@ -423,6 +430,45 @@ class Hybrid_sim():
         self.pysph_sim.particles[0].v[boundary_ids] = self.pysph_sim.particles[0].v1[boundary_ids]
         self.pysph_sim.particles[0].x[boundary_ids] = self.pysph_sim.particles[0].x1[boundary_ids]
         self.pysph_sim.particles[0].y[boundary_ids] = self.pysph_sim.particles[0].y1[boundary_ids]
+
+    def get_boundary_values_riemann(self):
+        """ Sets select values to old values for particles with particle_type_id == 1 or 1.1
+        Args:
+            self - Should call self.particle_sort() prior to calling
+        Returns:
+            None
+        """
+        boundary_ids = np.extract(self.pysph_sim.particles[0].particle_type_id<2.0,self.pysph_sim.particles[0].id)
+        self.pysph_sim.particles[0].set_to_zero(['aw','w','w0','z','z0'])
+        self.pysph_sim.particles[0].aalpha1[boundary_ids] = 0.0
+        self.pysph_sim.particles[0].aalpha2[boundary_ids] = 0.0
+        self.pysph_sim.particles[0].ae[boundary_ids] = 0.0
+        self.pysph_sim.particles[0].ah[boundary_ids] = 0.0
+        self.pysph_sim.particles[0].alpha1[boundary_ids] = 0.0
+        self.pysph_sim.particles[0].alpha10[boundary_ids] = 0.0
+        self.pysph_sim.particles[0].alpha2[boundary_ids] = 0.0
+        self.pysph_sim.particles[0].alpha20[boundary_ids] = 0.0
+        self.pysph_sim.particles[0].am[boundary_ids] = 0.0
+        self.pysph_sim.particles[0].arho[boundary_ids] = 0.0
+        self.pysph_sim.particles[0].au[boundary_ids] = 0.0
+        self.pysph_sim.particles[0].av[boundary_ids] = 0.0
+        self.pysph_sim.particles[0].cs[boundary_ids] = 0.0
+        self.pysph_sim.particles[0].del2e[boundary_ids] = 0.0
+        self.pysph_sim.particles[0].div[boundary_ids] = 0.0
+        self.pysph_sim.particles[0].grhox[boundary_ids] = 0.0
+        self.pysph_sim.particles[0].grhoy[boundary_ids] = 0.0
+        self.pysph_sim.particles[0].grhoz[boundary_ids] = 0.0
+        self.pysph_sim.particles[0].omega[boundary_ids] = 0.0
+
+        self.pysph_sim.particles[0].e[boundary_ids] = self.pysph_sim.particles[0].e1[boundary_ids]
+        self.pysph_sim.particles[0].h[boundary_ids] = self.pysph_sim.particles[0].h1[boundary_ids]
+        self.pysph_sim.particles[0].m[boundary_ids] = self.pysph_sim.particles[0].m1[boundary_ids]
+        self.pysph_sim.particles[0].p[boundary_ids] = self.pysph_sim.particles[0].p1[boundary_ids]
+        self.pysph_sim.particles[0].rho[boundary_ids] = self.pysph_sim.particles[0].rho1[boundary_ids]
+        #self.pysph_sim.particles[0].u[boundary_ids] = self.pysph_sim.particles[0].u1[boundary_ids]
+        #self.pysph_sim.particles[0].v[boundary_ids] = self.pysph_sim.particles[0].v1[boundary_ids]
+        #self.pysph_sim.particles[0].x[boundary_ids] = self.pysph_sim.particles[0].x1[boundary_ids]
+        #self.pysph_sim.particles[0].y[boundary_ids] = self.pysph_sim.particles[0].y1[boundary_ids]
 
     ##### WALL #####
 
@@ -848,7 +894,7 @@ class Hybrid_sim():
 
         my_plot0 = axs.scatter(x_vals, y_vals, c=flag_map, s=100*self.injection_map.grid.dx, cmap='coolwarm')
         axs.set_aspect('equal')
-        #axs.set_title('Injection Map')
+        axs.set_title('Injection Map')
         axs.set_xlim(xlims)
         axs.set_ylim(ylims)
         plt.show()
