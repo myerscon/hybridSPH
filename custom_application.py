@@ -64,9 +64,9 @@ class CustomApplication(Application):
         gsph = GSPHScheme(
             fluids=['fluid'], solids=[], dim=dim, gamma=self.gamma,
             kernel_factor=self.sps[0],
-            g1=self.sps[2], g2=self.sps[3], rsolver=2, interpolation=self.sps[4], monotonicity=self.sps[5],
+            g1=self.sps[2], g2=self.sps[3], rsolver=self.sps[1], interpolation=self.sps[4], monotonicity=self.sps[5],
             interface_zero=True, hybrid=False, blend_alpha=2.0,
-            niter=4000, tol=1e-6, has_ghosts=True
+            niter=10000, tol=1e-6, has_ghosts=True
         )
 
         crksph = CRKSPHScheme(
